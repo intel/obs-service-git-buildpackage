@@ -1,0 +1,20 @@
+<service name="git-buildpackage">
+    <summary>Build with git-buildpackage</summary>
+    <description>Export packaging files from a git repository managed with the git-buildpackage suite.</description>
+    <parameter name="url">
+        <description>Remote repository URL</description>
+        <required/>
+    </parameter>
+    <parameter name="revision">
+        <description>Revision (tree-ish) to be built. Default is HEAD.</description>
+    </parameter>
+    <parameter name="spec-vcs-tag">
+        <description>Set/update the VCS tag in the spec file</description>
+    </parameter>
+    <parameter name="verbose">
+        <description>Enable verbose output. For debugging purposes.</description>
+        <allowedvalue>no</allowedvalue>
+        <allowedvalue>yes</allowedvalue>
+    </parameter>
+</service>
+
