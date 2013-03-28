@@ -50,7 +50,8 @@ def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', help='Remote repository URL', required=True)
     parser.add_argument('--outdir', help='Output direcory')
-    parser.add_argument('--revision', help='Remote repository URL')
+    parser.add_argument('--revision', help='Remote repository URL',
+                        default='HEAD')
     parser.add_argument('--verbose', '-v', help='Verbose output',
                         choices=['yes', 'no'])
     parser.add_argument('--spec-vcs-tag', help='Set/update the VCS tag in the'
@@ -70,6 +71,7 @@ def main(argv=None):
     # Create / update cached repository
     try:
         repo = CachedRepo(args.url)
+        args.revision = repo.update_working_copy(args.revision)
     except CachedRepoError as err:
         logger.error('RepoCache: %s' % str(err))
         return 1
@@ -82,6 +84,6 @@ def main(argv=None):
     if ret:
         logger.error('Git-buildpackage-rpm failed, unable to export packaging '
                      'files')
-        return 1
+        return 2
 
     return 0
