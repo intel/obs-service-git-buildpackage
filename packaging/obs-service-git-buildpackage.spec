@@ -4,7 +4,7 @@ Name:           obs-service-git-buildpackage
 License:        GPL-2.0+
 Group:          Development/Tools/Building
 Summary:        Get sources from a repository managed with the git-buildpackage suite
-Version:        0.0.1
+Version:        0.1
 Release:        0
 URL:            http://www.tizen.org
 Source:         %{name}-%{version}.tar.bz2

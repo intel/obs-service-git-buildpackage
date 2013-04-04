@@ -1,3 +1,10 @@
+* Fri Apr 05 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 8092a5a
+- setup.py: parse version from spec
+- tests: enable xml nose report in config
+- CachedRepository: option to not update submodules
+- Utilize non-bare mirrored git clone
+- tests: more extensive unit tests
+
 * Mon Mar 25 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.0.1
 - Initial version
 
