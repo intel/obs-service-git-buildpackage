@@ -161,7 +161,7 @@ class CachedRepo(object):
     def __del__(self):
         self._release_lock()
 
-    def update_working_copy(self, commitish='HEAD'):
+    def update_working_copy(self, commitish='HEAD', submodules=True):
         """Reset HEAD to the given commit-ish"""
         if self.repo.bare:
             raise CachedRepoError('Cannot update working copy of a bare repo')
@@ -178,6 +178,7 @@ class CachedRepo(object):
         except GitRepositoryError as err:
             raise CachedRepoError("Unknown ref '%s': %s" % (commitish, err))
         self.repo.force_head(sha, hard=True)
-        self.repo.update_submodules(init=True, recursive=True, fetch=True)
+        if submodules:
+            self.repo.update_submodules(init=True, recursive=True, fetch=True)
         return sha
 
