@@ -21,12 +21,21 @@
 
 from setuptools import setup
 
+
+def get_version():
+    """Get version from the spec file"""
+    with open('packaging/obs-service-git-buildpackage.spec', 'r') as spec:
+        for line in spec.readlines():
+            if line.lower().startswith('version:'):
+                return line.split(':', 1)[1].strip()
+    raise Exception('ERROR: unable to parse version from spec file')
+
 setup(name='obs_service_gbp',
-      version='0.0.1',
+      version=get_version(),
       description='OBS source service utilizing git-buildpackage',
       author='Markus Lehtonen',
       author_email='markus.lehtonen@linux.intel.com',
       packages=['obs_service_gbp'],
       data_files=[('/usr/lib/obs/service', ['service/git-buildpackage',
-                                            'service/git-buildpackage.service'])],
+                    'service/git-buildpackage.service'])],
      )
