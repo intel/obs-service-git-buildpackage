@@ -61,6 +61,10 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
         """Checkout commitish"""
         self._git_command("checkout", ['--force', commitish])
 
+    def force_clean(self):
+        """Clean repository"""
+        self._git_command('clean', ['-f', '-d', '-x'])
+
     @classmethod
     def clone(cls, path, url, bare=False):
         """Create a mirrored clone"""
@@ -175,6 +179,10 @@ class CachedRepo(object):
         # and we don't wont to update the working copy at this point.
         shutil.copyfile(os.path.join(self.repo.git_dir, 'FETCH_HEAD'),
                         os.path.join(self.repo.git_dir, 'HEAD'))
+        # Clean: just in case - this should be never ever really be necessary
+        # unless somebody manually hacks the cached repository introducing
+        # local changes
+        self.repo.force_clean()
         # Resolve commit-ish to sha-1 and set HEAD (and working copy) to it
         try:
             sha = self.repo.rev_parse(commitish)
