@@ -57,6 +57,10 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             with open(os.path.join(self.git_dir, 'FETCH_HEAD'), 'w') as fhead:
                 fhead.write('0000000000000000000000000000000000000000\n')
 
+    def force_checkout(self, commitish):
+        """Checkout commitish"""
+        self._git_command("checkout", ['--force', commitish])
+
     @classmethod
     def clone(cls, path, url, bare=False):
         """Create a mirrored clone"""
@@ -174,7 +178,7 @@ class CachedRepo(object):
         # Resolve commit-ish to sha-1 and set HEAD (and working copy) to it
         try:
             sha = self.repo.rev_parse(commitish)
-            self.repo.set_branch(sha)
+            self.repo.force_checkout(sha)
         except GitRepositoryError as err:
             raise CachedRepoError("Unknown ref '%s': %s" % (commitish, err))
         self.repo.force_head(sha, hard=True)

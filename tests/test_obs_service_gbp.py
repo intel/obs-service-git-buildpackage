@@ -222,6 +222,23 @@ class TestCachedRepo(UnitTestsBase):
         with assert_raises(CachedRepoError):
             sha = repo.update_working_copy('foo/bar')
 
+    def test_update_dirty_index(self):
+        """Test situation where index is out-of-sync with HEAD"""
+
+        self.update_repository_file(self.orig_repo, 'foo.txt', 'more data\n')
+        shas = [self.orig_repo.rev_parse('HEAD~2'),
+                self.orig_repo.rev_parse('HEAD~1'),
+                self.orig_repo.rev_parse('HEAD')]
+        repo = CachedRepo(self.orig_repo.path)
+        repo.update_working_copy(shas[-1])
+        del repo
+
+        # Change upstream, after this index cached repo will be out-of-sync
+        # from orig HEAD
+        self.orig_repo.set_branch('HEAD~1')
+        repo = CachedRepo(self.orig_repo.path)
+        assert repo.update_working_copy(shas[0]) == shas[0]
+
     def test_update_bare(self):
         """Test update for bare repository"""
         repo = CachedRepo(self.orig_repo.path, bare=True)
