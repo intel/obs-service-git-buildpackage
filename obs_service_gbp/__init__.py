@@ -29,8 +29,8 @@ from gbp.git.repository import GitRepository, GitRepositoryError
 
 
 # Setup logging
-logger = gbplog.getLogger('source_service')
-logger.setLevel(gbplog.INFO)
+LOGGER = gbplog.getLogger('source_service')
+LOGGER.setLevel(gbplog.INFO)
 
 
 class MirrorGitRepository(GitRepository): # pylint: disable=R0904
@@ -73,7 +73,7 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
                                                          mirror=bare,
                                                          auto_name=False)
         else:
-            logger.debug('Initializing non-bare mirrored repo')
+            LOGGER.debug('Initializing non-bare mirrored repo')
             repo = cls.create(path)
             repo.add_remote_repo('origin', url)
             repo.set_config('remote.origin.fetch', '+refs/*:refs/*', True)
@@ -102,9 +102,9 @@ class CachedRepo(object):
         """Check and initialize repository cache base directory"""
         if 'CACHEDIR' in os.environ:
             self.basedir = os.environ['CACHEDIR']
-        logger.debug("Using cache basedir '%s'" % self.basedir)
+        LOGGER.debug("Using cache basedir '%s'" % self.basedir)
         if not os.path.exists(self.basedir):
-            logger.debug('Creating missing cache basedir')
+            LOGGER.debug('Creating missing cache basedir')
             try:
                 os.makedirs(self.basedir)
             except OSError as err:
@@ -113,13 +113,13 @@ class CachedRepo(object):
 
     def _acquire_lock(self, repodir):
         """Acquire the repository lock"""
-        logger.debug("Acquiring repository lock")
+        LOGGER.debug("Acquiring repository lock")
         try:
             self.lock = open(repodir + '.lock', 'w')
         except IOError as err:
             raise CachedRepoError('Unable to open repo lock file: %s' % err)
         fcntl.flock(self.lock, fcntl.LOCK_EX)
-        logger.debug("Repository lock acquired")
+        LOGGER.debug("Repository lock acquired")
 
     def _release_lock(self):
         """Release the repository lock"""
@@ -144,7 +144,7 @@ class CachedRepo(object):
             except GitRepositoryError:
                 pass
             if not self.repo or self.repo.bare != bare:
-                logger.info('Removing corrupted repo cache %s' % self.repodir)
+                LOGGER.info('Removing corrupted repo cache %s' % self.repodir)
                 try:
                     self.repo = None
                     shutil.rmtree(self.repodir)
@@ -152,14 +152,14 @@ class CachedRepo(object):
                     raise CachedRepoError('Failed to remove repo cache dir: %s'
                                          % str(err))
             else:
-                logger.info('Fetching from remote')
+                LOGGER.info('Fetching from remote')
                 try:
                     self.repo.force_fetch()
                 except GitRepositoryError as err:
                     raise CachedRepoError('Failed to fetch from remote: %s' %
                                            err)
         if not self.repo:
-            logger.info('Cloning from %s' % url)
+            LOGGER.info('Cloning from %s' % url)
             try:
                 self.repo = MirrorGitRepository.clone(self.repodir, url,
                                                       bare=bare)

@@ -23,7 +23,7 @@ import argparse
 
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
-from obs_service_gbp import logger, gbplog, CachedRepo, CachedRepoError
+from obs_service_gbp import LOGGER, gbplog, CachedRepo, CachedRepoError
 
 def construct_gbp_args(args):
     """Construct args list for git-buildpackage-rpm"""
@@ -61,28 +61,28 @@ def parse_args(argv):
 def main(argv=None):
     """Main function"""
 
-    logger.info('Starting git-buildpackage source service')
+    LOGGER.info('Starting git-buildpackage source service')
     args = parse_args(argv)
 
     if args.verbose == 'yes':
         gbplog.setup(color='auto', verbose=True)
-        logger.setLevel(gbplog.DEBUG)
+        LOGGER.setLevel(gbplog.DEBUG)
 
     # Create / update cached repository
     try:
         repo = CachedRepo(args.url)
         args.revision = repo.update_working_copy(args.revision)
     except CachedRepoError as err:
-        logger.error('RepoCache: %s' % str(err))
+        LOGGER.error('RepoCache: %s' % str(err))
         return 1
 
     # Export sources with GBP
     gbp_args = construct_gbp_args(args)
     os.chdir(repo.repodir)
-    logger.info('Exporting packaging files with GBP')
+    LOGGER.info('Exporting packaging files with GBP')
     ret = gbp_rpm(gbp_args)
     if ret:
-        logger.error('Git-buildpackage-rpm failed, unable to export packaging '
+        LOGGER.error('Git-buildpackage-rpm failed, unable to export packaging '
                      'files')
         return 2
 
