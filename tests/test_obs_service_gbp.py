@@ -60,7 +60,7 @@ class UnitTestsBase(object):
         cls.cachedir = os.path.join(cls.workdir, 'cache')
         os.environ['CACHEDIR'] = cls.cachedir
         # Create an orig repo for testing
-        cls.orig_repo = cls.create_orig_repo('orig')
+        cls._template_repo = cls.create_orig_repo('orig')
 
     @classmethod
     def teardown_class(cls):
@@ -77,6 +77,24 @@ class UnitTestsBase(object):
         repo.add_files(filename)
         repo.commit_files(filename, "Update %s" % filename)
 
+    def __init__(self):
+        self.orig_repo = None
+
+    def setup(self):
+        """Test class setup"""
+        # Create temporary "orig" repository
+        repo_path = os.path.abspath(tempfile.mkdtemp(prefix='orig_',
+                                    dir=self.workdir))
+        self.orig_repo = GitRepository.clone(repo_path,
+                                             self._template_repo.path,
+                                             auto_name=False)
+
+    def teardown(self):
+        """Test case teardown"""
+        os.chdir(self.workdir)
+        if not 'DEBUG_NOSETESTS' in os.environ:
+            shutil.rmtree(self.orig_repo.path)
+
 
 class TestBasicFunctionality(UnitTestsBase):
     """Base class for unit tests"""
@@ -87,8 +105,10 @@ class TestBasicFunctionality(UnitTestsBase):
 
     def setup(self):
         """Test case setup"""
+        super(TestBasicFunctionality, self).setup()
         # Change to a temporary directory
-        self.tmpdir = tempfile.mkdtemp(dir=self.workdir)
+        self.tmpdir = self.orig_repo.path.replace('orig', 'test')
+        os.makedirs(self.tmpdir)
         os.chdir(self.tmpdir)
 
     def teardown(self):
@@ -97,6 +117,7 @@ class TestBasicFunctionality(UnitTestsBase):
         os.chdir(self.workdir)
         if not 'DEBUG_NOSETESTS' in os.environ:
             shutil.rmtree(self.tmpdir)
+        super(TestBasicFunctionality, self).teardown()
 
     def test_invalid_options(self):
         """Test invalid options"""
