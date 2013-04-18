@@ -1,5 +1,3 @@
-%define do_unittests 0
-
 Name:           obs-service-git-buildpackage
 License:        GPL-2.0+
 Group:          Development/Tools/Building
@@ -35,7 +33,9 @@ files that are managed with git-buildpackage tools.
 
 %if 0%{?do_unittests}
 %check
-%{__python} setup.py nosetests
+GIT_AUTHOR_EMAIL=rpmbuild@example.com GIT_AUTHOR_NAME=rpmbuild \
+    GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL \
+    %{__python} setup.py nosetests
 %endif
 
 
