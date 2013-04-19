@@ -89,8 +89,8 @@ class CachedRepoError(Exception):
 class CachedRepo(object):
     """Object representing a cached repository"""
 
-    def __init__(self, url, bare=False):
-        self.basedir = '/var/cache/obs/git-buildpackage-repos/'
+    def __init__(self, base_dir, url, bare=False):
+        self.basedir = base_dir
         self.repodir = None
         self.repo = None
         self.lock = None
@@ -100,8 +100,6 @@ class CachedRepo(object):
 
     def _init_cache_base(self):
         """Check and initialize repository cache base directory"""
-        if 'CACHEDIR' in os.environ:
-            self.basedir = os.environ['CACHEDIR']
         LOGGER.debug("Using cache basedir '%s'" % self.basedir)
         if not os.path.exists(self.basedir):
             LOGGER.debug('Creating missing cache basedir')

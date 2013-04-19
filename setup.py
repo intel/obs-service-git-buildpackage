@@ -37,5 +37,6 @@ setup(name='obs_service_gbp',
       author_email='markus.lehtonen@linux.intel.com',
       packages=['obs_service_gbp'],
       data_files=[('/usr/lib/obs/service', ['service/git-buildpackage',
-                    'service/git-buildpackage.service'])],
+                    'service/git-buildpackage.service']),
+                  ('/etc/obs/services', ['config/git-buildpackage'])],
      )

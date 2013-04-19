@@ -88,7 +88,7 @@ class UnitTestsBase(object):
         # Use cache in our tmpdir
         suffix = os.path.basename(self.tmpdir).replace('test', '')
         self.cachedir = os.path.join(self.workdir, 'cache' + suffix)
-        os.environ['CACHEDIR'] = self.cachedir
+        os.environ['OBS_GIT_BUILDPACKAGE_REPO_CACHE_DIR'] = self.cachedir
         # Create temporary "orig" repository
         repo_dir = os.path.join(self.workdir, 'orig' + suffix)
         shutil.copytree(self._template_repo.path, repo_dir)
@@ -150,6 +150,23 @@ class TestBasicFunctionality(UnitTestsBase):
         assert service(['--url', self.orig_repo.path,
                         '--spec-vcs-tag=orig/%(tagname)s']) == 0
 
+    def test_options_config(self):
+        """Test the --config option"""
+        # Create config file
+        with open('my.conf', 'w') as conf:
+            conf.write('[general]\n')
+            conf.write('repo-cache-dir = my-repo-cache\n')
+
+        # Mangle environment
+        default_cache = os.environ['OBS_GIT_BUILDPACKAGE_REPO_CACHE_DIR']
+        del os.environ['OBS_GIT_BUILDPACKAGE_REPO_CACHE_DIR']
+
+        # Check that the repo cache we configured is actually used
+        assert (service(['--url', self.orig_repo.path, '--config', 'my.conf'])
+                == 0)
+        assert not os.path.exists(default_cache), os.listdir('.')
+        assert os.path.exists('my-repo-cache'), os.listdir('.')
+
 
 class TestObsRepoGitRepository(UnitTestsBase):
     """Test the special GitRepository class"""
@@ -163,28 +180,33 @@ class TestObsRepoGitRepository(UnitTestsBase):
         repo.set_config('foo.bar', 'bax', replace=True)
         assert repo.get_config('foo.bar') == 'bax'
 
+
 class TestCachedRepo(UnitTestsBase):
     """Test CachedRepo class"""
+
+    def MockCachedRepo(self, url, **kwargs):
+        """Automatically use suitable cache dir"""
+        return CachedRepo(self.cachedir, url, **kwargs)
 
     def test_invalid_url(self):
         """Test invalid url"""
         with assert_raises(CachedRepoError):
-            CachedRepo('foo/bar.git')
+            self.MockCachedRepo('foo/bar.git')
         with assert_raises(CachedRepoError):
-            CachedRepo('foo/baz.git', bare=True)
+            self.MockCachedRepo('foo/baz.git', bare=True)
 
         # Try updating from non-existing repo
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
         shutil.move(self.orig_repo.path, self.orig_repo.path + '.tmp')
         with assert_raises(CachedRepoError):
-            repo = CachedRepo(self.orig_repo.path)
+            repo = self.MockCachedRepo(self.orig_repo.path)
         shutil.move(self.orig_repo.path + '.tmp', self.orig_repo.path)
 
     def test_clone_and_fetch(self):
         """Basic test for cloning and fetching"""
         # Clone
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         assert repo
         assert repo.repo.bare is not True
         sha = repo.repo.rev_parse('master')
@@ -193,14 +215,14 @@ class TestCachedRepo(UnitTestsBase):
         # Make new commit in "upstream"
         self.update_repository_file(self.orig_repo, 'foo.txt', 'more data\n')
         # Fetch
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         assert repo
         assert path == repo.repo.path
         assert sha != repo.repo.rev_parse('master')
 
     def test_update_working_copy(self):
         """Test update functionality"""
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         # Check that the refs are mapped correctly
         sha = repo.update_working_copy('HEAD~1')
         assert sha == self.orig_repo.rev_parse('HEAD~1')
@@ -218,25 +240,25 @@ class TestCachedRepo(UnitTestsBase):
         shas = [self.orig_repo.rev_parse('HEAD~2'),
                 self.orig_repo.rev_parse('HEAD~1'),
                 self.orig_repo.rev_parse('HEAD')]
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         repo.update_working_copy(shas[-1])
         del repo
 
         # Change upstream, after this index cached repo will be out-of-sync
         # from orig HEAD
         self.orig_repo.set_branch('HEAD~1')
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         assert repo.update_working_copy(shas[0]) == shas[0]
 
     def test_update_bare(self):
         """Test update for bare repository"""
-        repo = CachedRepo(self.orig_repo.path, bare=True)
+        repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
         with assert_raises(CachedRepoError):
             repo.update_working_copy('HEAD')
 
     def test_invalid_remote_head(self):
         """Test clone/update from remote whose HEAD is invalid"""
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
         # Make remote HEAD point to a non-existent branch
@@ -244,7 +266,7 @@ class TestCachedRepo(UnitTestsBase):
         with open(os.path.join(self.orig_repo.git_dir, 'HEAD'), 'w') as head:
             head.write('ref: refs/heads/non-existent-branch\n')
 
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         # Local HEAD should be invalid, now
         with assert_raises(CachedRepoError):
             repo.update_working_copy('HEAD')
@@ -257,23 +279,23 @@ class TestCachedRepo(UnitTestsBase):
     def test_corrupted_cache(self):
         """Test recovering from corrupted cache"""
         # Clone
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         # Corrupt repo
         shutil.rmtree(os.path.join(repo.repo.path, '.git/refs'))
         with assert_raises(GitRepositoryError):
             repo.repo.rev_parse('HEAD')
         del repo
         # Update and check status
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         assert repo.repo.rev_parse('HEAD')
 
     def test_changing_repotype(self):
         """Test changing repo type from bare -> normal"""
         # Clone
-        repo = CachedRepo(self.orig_repo.path, bare=True)
+        repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
         assert repo.repo.bare == True
         del repo
-        repo = CachedRepo(self.orig_repo.path, bare=False)
+        repo = self.MockCachedRepo(self.orig_repo.path, bare=False)
         assert repo.repo.bare == False
 
     def test_cache_access_error(self):
@@ -281,23 +303,23 @@ class TestCachedRepo(UnitTestsBase):
         # Check base cachedir creation access error
         os.chmod(self.workdir, 0)
         with assert_raises(CachedRepoError):
-            repo = CachedRepo(self.orig_repo.path)
+            repo = self.MockCachedRepo(self.orig_repo.path)
         os.chmod(self.workdir, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
         # Check cache base dir access error
         os.chmod(self.cachedir, 0)
         with assert_raises(CachedRepoError):
-            repo = CachedRepo(self.orig_repo.path)
+            repo = self.MockCachedRepo(self.orig_repo.path)
         os.chmod(self.cachedir, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
-        repo = CachedRepo(self.orig_repo.path)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
         # Check repodir delete eror
         os.chmod(self.cachedir, stat.S_IREAD | stat.S_IEXEC)
         with assert_raises(CachedRepoError):
             # Change repo type -> tries to delete
-            repo = CachedRepo(self.orig_repo.path, bare=True)
+            repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
         os.chmod(self.cachedir, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
 

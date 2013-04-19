@@ -51,3 +51,6 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 %dir /usr/lib/obs/service
 /usr/lib/obs/service/*
 %{python_sitelib}/obs_service_gbp
+%dir %{_sysconfdir}/obs
+%dir %{_sysconfdir}/obs/services
+%config %{_sysconfdir}/obs/services/*

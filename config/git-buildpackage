@@ -1,0 +1,10 @@
+##
+## Configuration for the git-buildpackage OBS source service
+##
+
+[general]
+## Repository cache directory.
+## Default is '/var/cache/obs/git-buildpackage-repos/'
+## You probably need to define if the service is run on the client side as
+## the default directory is likely not accessible by regular users.
+#repo-cache-dir = /var/cache/obs/git-buildpackage-repos/
