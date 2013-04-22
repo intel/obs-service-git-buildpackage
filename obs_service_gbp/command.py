@@ -20,29 +20,56 @@
 
 import os
 import argparse
-
 from ConfigParser import SafeConfigParser
+
+from gbp.rpm import guess_spec, NoSpecError
+from gbp.scripts.buildpackage import main as gbp_deb
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
 from obs_service_gbp import LOGGER, gbplog, CachedRepo, CachedRepoError
 
+
+def have_spec(directory):
+    """Find if the package has spec files"""
+    try:
+        guess_spec(directory, recursive=True)
+    except NoSpecError as err:
+        if str(err).startswith('No spec file'):
+            return False
+    return True
+
 def construct_gbp_args(args):
     """Construct args list for git-buildpackage-rpm"""
-    argv = ['argv[0] stub',
-            '--git-builder=osc',
-            '--git-export-only',
-            '--git-ignore-branch']
+    # Args common to deb and rpm
+    argv_common = ['argv[0] stub',
+                   '--git-ignore-branch',
+                   '--git-no-hooks']
     if args.outdir:
-        argv.append('--git-export-dir=%s' % os.path.abspath(args.outdir))
+        argv_common.append('--git-export-dir=%s' % os.path.abspath(args.outdir))
     else:
-        argv.append('--git-export-dir=%s' % os.path.abspath(os.curdir))
+        argv_common.append('--git-export-dir=%s' % os.path.abspath(os.curdir))
     if args.revision:
-        argv.append('--git-export=%s' % args.revision)
+        argv_common.append('--git-export=%s' % args.revision)
     if args.verbose == 'yes':
-        argv.append('--git-verbose')
+        argv_common.append('--git-verbose')
+
+    # Dermine deb and rpm specific args
+    argv_rpm = argv_common[:]
+    argv_rpm.extend(['--git-builder=osc',
+                     '--git-export-only',
+                     '--git-ignore-branch'])
     if args.spec_vcs_tag:
-        argv.append('--git-spec-vcs-tag=%s' % args.spec_vcs_tag)
-    return argv
+        argv_rpm.append('--git-spec-vcs-tag=%s' % args.spec_vcs_tag)
+
+    # We need to build this way (i.e. run outside the sources directory)
+    # because if run with '-b .' dpkg-source will put it's output to different
+    # directory, depending on the version of dpkg
+    deb_builder_script = 'cd ..; dpkg-source -b $GBP_BUILD_DIR'
+    argv_deb = argv_common[:]
+    argv_deb.extend(['--git-purge',
+                     '--git-builder=%s' % deb_builder_script])
+    LOGGER.debug('rpm args' % argv_rpm)
+    return (argv_rpm, argv_deb)
 
 def read_config(filenames):
     '''Read configuration file(s)'''
@@ -77,6 +104,10 @@ def parse_args(argv):
     parser.add_argument('--outdir', help='Output direcory')
     parser.add_argument('--revision', help='Remote repository URL',
                         default='HEAD')
+    parser.add_argument('--rpm', choices=['auto', 'yes', 'no'], default='auto',
+                        help='Export RPM packaging files')
+    parser.add_argument('--deb', choices=['auto', 'yes', 'no'], default='auto',
+                        help='Export Debian packaging files')
     parser.add_argument('--verbose', '-v', help='Verbose output',
                         choices=['yes', 'no'])
     parser.add_argument('--spec-vcs-tag', help='Set/update the VCS tag in the'
@@ -106,17 +137,28 @@ def main(argv=None):
         return 1
 
     # Export sources with GBP
-    gbp_args = construct_gbp_args(args)
+    rpm_args, deb_args = construct_gbp_args(args)
     orig_dir = os.path.abspath(os.curdir)
     try:
         os.chdir(repo.repodir)
-        LOGGER.info('Exporting packaging files with GBP')
-        ret = gbp_rpm(gbp_args)
+        specs_found = have_spec('.')
+        if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
+            LOGGER.info('Exporting RPM packaging files with GBP')
+            LOGGER.debug('git-buildpackage-rpm args: %s' % ' '.join(rpm_args))
+            ret = gbp_rpm(rpm_args)
+            if ret:
+                LOGGER.error('Git-buildpackage-rpm failed, unable to export '
+                             'RPM packaging files')
+                return 2
+        if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
+            LOGGER.info('Exporting Debian source package with GBP')
+            LOGGER.debug('git-buildpackage args: %s' % ' '.join(deb_args))
+            ret = gbp_deb(deb_args)
+            if ret:
+                LOGGER.error('Git-buildpackage failed, unable to export Debian '
+                             'sources package files')
+                return 3
     finally:
         os.chdir(orig_dir)
-    if ret:
-        LOGGER.error('Git-buildpackage-rpm failed, unable to export packaging '
-                 'files')
-        return 2
 
     return 0

@@ -6,6 +6,7 @@ Version:        0.1
 Release:        0
 URL:            http://www.tizen.org
 Source:         %{name}-%{version}.tar.bz2
+Requires:       git-buildpackage
 Requires:       git-buildpackage-rpm
 BuildRequires:  python
 BuildRequires:  python-setuptools

@@ -38,13 +38,37 @@ class UnitTestsBase(object):
     @classmethod
     def create_orig_repo(cls, name):
         """Create test repo"""
-        orig_repo = GitRepository.create(os.path.join(cls.workdir, name))
-        orig_repo.commit_dir(TEST_DATA_DIR, 'Initial version', 'master',
-                             create_missing_branch=True)
-        orig_repo.force_head('master', hard=True)
-        # Make new commit
-        cls.update_repository_file(orig_repo, 'foo.txt', 'new data\n')
-        return orig_repo
+        repo_path = os.path.join(cls.workdir, name)
+        #shutil.copytree (TEST_DATA_DIR, orig_repo_path)
+        repo = GitRepository.create(repo_path)
+
+        # First, commit sources only and create branch 'sources'
+        sources = [src for src in os.listdir(TEST_DATA_DIR)
+                       if not src in ['packaging', 'debian']]
+        repo.add_files(sources, work_tree=TEST_DATA_DIR)
+        repo.commit_staged('Initial version')
+        # Make one new commit
+        cls.update_repository_file(repo, 'foo.txt', 'new data\n')
+        repo.create_branch('source')
+
+        # Create branch with rpm packaging only
+        repo.add_files('packaging', work_tree=TEST_DATA_DIR)
+        repo.commit_staged('Add rpm packaging files')
+        repo.create_branch('rpm')
+
+        # Master has both debian and rpm packaging
+        repo.add_files('debian', work_tree=TEST_DATA_DIR)
+        repo.commit_staged('Add debian packaging files')
+
+        # Create branch with deb packaging only
+        repo.create_branch('deb', 'source')
+        repo.set_branch('deb')
+        repo.add_files('debian', work_tree=TEST_DATA_DIR)
+        repo.commit_staged('Add deb packaging files')
+
+        repo.set_branch('master')
+        repo.force_head('master', hard=True)
+        return repo
 
     @classmethod
     def setup_class(cls):
@@ -105,8 +129,14 @@ class UnitTestsBase(object):
             shutil.rmtree(self.tmpdir)
 
 
-class TestBasicFunctionality(UnitTestsBase):
+class TestService(UnitTestsBase):
     """Base class for unit tests"""
+
+    def _check_files(self, files, directory=''):
+        """Check that the tmpdir content matches expectations"""
+        found = set(os.listdir(os.path.join(self.tmpdir, directory)))
+        expect = set(files)
+        assert found == expect, "Expected: %s, Found: %s" % (expect, found)
 
     def test_invalid_options(self):
         """Test invalid options"""
@@ -119,24 +149,56 @@ class TestBasicFunctionality(UnitTestsBase):
         # Invalid repo
         assert service(['--url=foo/bar.git']) != 0
 
-    def test_basic_export(self):
-        """Test that export works"""
-        assert service(['--url', self.orig_repo.path]) == 0
+    def test_basic_rpm_export(self):
+        """Test that rpm export works"""
+        assert service(['--url', self.orig_repo.path, '--revision=rpm']) == 0
+        self._check_files(['test-package.spec', 'test-package_0.1.tar.gz'])
 
-    def test_gbp_failure(self):
-        """Test git-buildpackage failure"""
+    def test_basic_deb_export(self):
+        """Test that deb export works"""
+        assert service(['--url', self.orig_repo.path, '--revision=deb']) == 0
+        self._check_files(['test-package_0.1.dsc', 'test-package_0.1.tar.gz'])
+
+    def test_empty_export(self):
+        """Test case where nothing is exported"""
+        assert service(['--url', self.orig_repo.path, '--revision=source']) == 0
+        self._check_files([])
+        assert service(['--url', self.orig_repo.path, '--rpm=no',
+                       '--deb=no']) == 0
+        self._check_files([])
+
+    def test_basic_dual_export(self):
+        """Test that simultaneous rpm and deb export works"""
+        assert service(['--url', self.orig_repo.path]) == 0
+        self._check_files(['test-package.spec', 'test-package_0.1.dsc',
+                           'test-package_0.1.tar.gz'])
+
+    def test_gbp_rpm_failure(self):
+        """Test git-buildpackage-rpm failure"""
         assert service(['--url', self.orig_repo.path, '--outdir=foo/bar']) == 2
+        assert service(['--url', self.orig_repo.path, '--rpm=yes',
+                        '--revision=source']) == 2
+
+    def test_gbp_deb_failure(self):
+        """Test git-buildpackage (deb) failure"""
+        assert service(['--url', self.orig_repo.path, '--rpm=no',
+                        '--outdir=foo/bar']) == 3
+        assert service(['--url', self.orig_repo.path, '--deb=yes',
+                        '--revision=source']) == 3
 
     def test_options_outdir(self):
         """Test the --outdir option"""
         outdir = os.path.join(self.tmpdir, 'outdir')
         args = ['--url', self.orig_repo.path, '--outdir=%s' % outdir]
         assert service(args) == 0
-        assert os.path.isdir(outdir)
+        self._check_files(['test-package.spec', 'test-package_0.1.dsc',
+                           'test-package_0.1.tar.gz'], outdir)
 
     def test_options_revision(self):
         """Test the --revision option"""
         assert service(['--url', self.orig_repo.path, '--revision=master']) == 0
+        self._check_files(['test-package.spec', 'test-package_0.1.dsc',
+                           'test-package_0.1.tar.gz'])
         assert service(['--url', self.orig_repo.path, '--revision=foobar']) == 1
 
     def test_options_verbose(self):
@@ -316,7 +378,7 @@ class TestCachedRepo(UnitTestsBase):
         repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
-        # Check repodir delete eror
+        # Check repodir delete error
         os.chmod(self.cachedir, stat.S_IREAD | stat.S_IEXEC)
         with assert_raises(CachedRepoError):
             # Change repo type -> tries to delete

@@ -11,6 +11,18 @@
     <parameter name="spec-vcs-tag">
         <description>Set/update the VCS tag in the spec file</description>
     </parameter>
+    <parameter name="rpm">
+        <description>Build RPM package</description>
+        <allowedvalue>auto</allowedvalue>
+        <allowedvalue>yes</allowedvalue>
+        <allowedvalue>no</allowedvalue>
+    </parameter>
+    <parameter name="deb">
+        <description>Build Debian package</description>
+        <allowedvalue>auto</allowedvalue>
+        <allowedvalue>yes</allowedvalue>
+        <allowedvalue>no</allowedvalue>
+    </parameter>
     <parameter name="verbose">
         <description>Enable verbose output. For debugging purposes.</description>
         <allowedvalue>no</allowedvalue>

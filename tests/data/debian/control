@@ -1,0 +1,8 @@
+Source: test-package
+Maintainer: Markus Lehtonen <markus.lehtonen@linux.intel.com>
+Standards-Version: 3.9.3
+
+Package: test-package
+Architecture: all
+Description: Test package for the git-buildpackage OBS source service
+ Dummy package for testing the git-buildpackage OBS source service.

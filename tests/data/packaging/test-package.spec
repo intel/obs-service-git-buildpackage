@@ -4,7 +4,7 @@ Version:    0.1
 Release:    0
 Group:      Development/Libraries
 License:    GPL-2.0
-Source:     %{name}-%{version}.tar.bz2
+Source:     %{name}_%{version}.tar.gz
 
 %description
 Dummy package for testing the git-buildpackage OBS source service.
