@@ -41,8 +41,7 @@ def have_spec(directory):
 def construct_gbp_args(args):
     """Construct args list for git-buildpackage-rpm"""
     # Args common to deb and rpm
-    argv_common = ['argv[0] stub',
-                   '--git-ignore-branch',
+    argv_common = ['--git-ignore-branch',
                    '--git-no-hooks']
     if args.outdir:
         argv_common.append('--git-export-dir=%s' % os.path.abspath(args.outdir))
@@ -54,7 +53,7 @@ def construct_gbp_args(args):
         argv_common.append('--git-verbose')
 
     # Dermine deb and rpm specific args
-    argv_rpm = argv_common[:]
+    argv_rpm = ['git-buildpackage-rpm'] + argv_common
     argv_rpm.extend(['--git-builder=osc',
                      '--git-export-only',
                      '--git-ignore-branch'])
@@ -65,7 +64,7 @@ def construct_gbp_args(args):
     # because if run with '-b .' dpkg-source will put it's output to different
     # directory, depending on the version of dpkg
     deb_builder_script = 'cd ..; dpkg-source -b $GBP_BUILD_DIR'
-    argv_deb = argv_common[:]
+    argv_deb = ['git-buildpackage'] + argv_common
     argv_deb.extend(['--git-purge',
                      '--git-builder=%s' % deb_builder_script])
     LOGGER.debug('rpm args' % argv_rpm)
