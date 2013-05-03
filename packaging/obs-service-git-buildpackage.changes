@@ -1,3 +1,24 @@
+* Fri May 03 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.2
+- gbp.conf: set tag format
+- Fix gbp arguments
+- Add support for Deb packages and selective building
+  Support for generating (exporting) Debian source package with gbp.
+  Also, adds new options 'rpm' and 'deb' for selecting whether to generate
+  rpm and/or deb packaging sources. These options are tri-state with
+  'auto' trying to determine if the corresponding packaging is available.
+- Support for config files
+  Initial support for reading service configuration from a file. For now,
+  there is only one configuration setting, i.e. 'repo-cache-dir'.
+  All configuration settings can be overridden with environment variables,
+  if needed. By default, the service tries to read
+  '/etc/obs/services/git-buildpackage' and '~/.obs/git-buildpackage'.
+- tests: more isolation for test cases
+- packaging: refine unit tests
+- pylint fix: rename global variable logger to LOGGER
+- CachedRepo: do force clean when updating working copy
+- CachedRepo: do force checkout when updating working copy
+- tests: run every testcase with clean orig repo
+
 * Fri Apr 05 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 8092a5a
 - setup.py: parse version from spec
 - tests: enable xml nose report in config
