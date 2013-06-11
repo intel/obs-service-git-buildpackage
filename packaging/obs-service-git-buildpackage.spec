@@ -1,16 +1,16 @@
 # Set to 0 if "normal release"
-%define pre_release 0
+%define pre_release 1
+
+%if 0%{?pre_release}
+%define release_prefix 0pre%{pre_release}.
+%endif
 
 Name:           obs-service-git-buildpackage
 License:        GPL-2.0+
 Group:          Development/Tools/Building
 Summary:        Get sources from a repository managed with the git-buildpackage suite
-Version:        0.5
-%if 0%{?opensuse_bs} && "%{pre_release}" != "0"
-Release:        %{pre_release}.<CI_CNT>.<B_CNT>
-%else
-Release:        %{pre_release}
-%endif
+Version:        0.6
+Release:        %{?release_prefix}%{?opensuse_bs:<CI_CNT>.<B_CNT>}%{!?opensuse_bs:1}
 URL:            http://www.tizen.org
 Source:         %{name}-%{version}.tar.bz2
 Requires:       git-buildpackage
