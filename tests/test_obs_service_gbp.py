@@ -26,7 +26,7 @@ from nose.tools import assert_raises # pylint: disable=E0611
 
 from gbp.git.repository import GitRepository, GitRepositoryError
 
-from obs_service_gbp import MirrorGitRepository, CachedRepo, CachedRepoError
+from gbp_repocache import MirrorGitRepository, CachedRepo, CachedRepoError
 from obs_service_gbp.command import main as service
 
 

@@ -26,8 +26,9 @@ from gbp.rpm import guess_spec, NoSpecError
 from gbp.scripts.buildpackage import main as gbp_deb
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
-from obs_service_gbp import LOGGER, gbplog, CachedRepo, CachedRepoError
-
+from obs_service_gbp import LOGGER, gbplog
+from gbp_repocache import CachedRepo, CachedRepoError
+import gbp_repocache
 
 def have_spec(directory):
     """Find if the package has spec files"""
@@ -124,6 +125,7 @@ def main(argv=None):
     if args.verbose == 'yes':
         gbplog.setup(color='auto', verbose=True)
         LOGGER.setLevel(gbplog.DEBUG)
+        gbp_repocache.LOGGER.setLevel(gbplog.DEBUG)
 
     config = read_config(args.config)
 

@@ -15,6 +15,7 @@ URL:            http://www.tizen.org
 Source:         %{name}-%{version}.tar.bz2
 Requires:       git-buildpackage
 Requires:       git-buildpackage-rpm
+Requires:       gbp-repocache = %{version}-%{release}
 BuildRequires:  python
 BuildRequires:  python-setuptools
 %if 0%{?do_unittests}
@@ -29,6 +30,16 @@ This is a source service for openSUSE Build Service.
 
 It supports cloning/updating repo from git and exporting sources and packaging
 files that are managed with git-buildpackage tools.
+
+
+%package -n gbp-repocache
+Summary:    Git repository cache API
+Group:      Development/Tools/Building
+Requires:   git-buildpackage-common
+
+%description -n gbp-repocache
+This package provides an implementation and python API of a Git repository
+cache.
 
 
 %prep
@@ -62,3 +73,7 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 %dir %{_sysconfdir}/obs
 %dir %{_sysconfdir}/obs/services
 %config %{_sysconfdir}/obs/services/*
+
+%files -n gbp-repocache
+%doc COPYING
+%{python_sitelib}/gbp_repocache
