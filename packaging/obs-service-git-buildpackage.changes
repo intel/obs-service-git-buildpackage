@@ -1,3 +1,8 @@
+* Thu Aug 08 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.3
+- Release 0.3
+- tests: split repocache tests into separate file
+- Move the Git repository cache in separate subpackage
+
 * Fri May 03 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.2
 - gbp.conf: set tag format
 - Fix gbp arguments
