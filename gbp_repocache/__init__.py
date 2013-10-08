@@ -110,7 +110,7 @@ class CachedRepo(object):
 
     def _acquire_lock(self, repodir):
         """Acquire the repository lock"""
-        LOGGER.debug("Acquiring repository lock")
+        LOGGER.debug("Acquiring repository lock for %s" % repodir)
         try:
             self.lock = open(repodir + '.lock', 'w')
         except IOError as err:
@@ -131,6 +131,7 @@ class CachedRepo(object):
         postfix = hashlib.sha1(url).hexdigest() # pylint: disable=E1101
         reponame = reponame + '_' + postfix
         self.repodir = os.path.join(self.basedir, reponame)
+        LOGGER.debug('Caching %s in %s' % (url, self.repodir))
 
         # Acquire repository lock
         self._acquire_lock(self.repodir)
