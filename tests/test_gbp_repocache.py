@@ -161,27 +161,34 @@ class TestCachedRepo(UnitTestsBase):
 
     def test_cache_access_error(self):
         """Test cached directory with invalid permissions"""
+        s_rwx = stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC
+
         # Check base cachedir creation access error
         os.chmod(self.workdir, 0)
         with assert_raises(CachedRepoError):
-            repo = self.MockCachedRepo(self.orig_repo.path)
-        os.chmod(self.workdir, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
+            try:
+                repo = self.MockCachedRepo(self.orig_repo.path)
+            finally:
+                os.chmod(self.workdir, s_rwx)
         repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
         # Check cache base dir access error
         os.chmod(self.cachedir, 0)
         with assert_raises(CachedRepoError):
-            repo = self.MockCachedRepo(self.orig_repo.path)
-        os.chmod(self.cachedir, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
+            try:
+                repo = self.MockCachedRepo(self.orig_repo.path)
+            finally:
+                os.chmod(self.cachedir, s_rwx)
         repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
         # Check repodir delete error
         os.chmod(self.cachedir, stat.S_IREAD | stat.S_IEXEC)
         with assert_raises(CachedRepoError):
-            # Change repo type -> tries to delete
-            repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
-        os.chmod(self.cachedir, stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC)
-
+            try:
+                # Change repo type -> tries to delete
+                repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
+            finally:
+                os.chmod(self.cachedir, s_rwx)
 
