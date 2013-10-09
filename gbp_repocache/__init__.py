@@ -94,19 +94,25 @@ class CachedRepo(object):
         self.repo = None
         self.lock = None
 
-        self._init_cache_base()
+        # Safe repo dir name
+        urlbase, reponame = self._split_url(url)
+        subdir = hashlib.sha1(urlbase).hexdigest() # pylint: disable=E1101
+        self.repodir = os.path.join(self.basedir, subdir, reponame)
+
+        self._init_cache_dir()
         self._init_git_repo(url, bare)
 
-    def _init_cache_base(self):
+    def _init_cache_dir(self):
         """Check and initialize repository cache base directory"""
         LOGGER.debug("Using cache basedir '%s'" % self.basedir)
-        if not os.path.exists(self.basedir):
-            LOGGER.debug('Creating missing cache basedir')
+        _subdir = os.path.dirname(self.repodir)
+        if not os.path.exists(_subdir):
+            LOGGER.debug('Creating missing cache subdir %s' % _subdir)
             try:
-                os.makedirs(self.basedir)
+                os.makedirs(_subdir)
             except OSError as err:
-                raise CachedRepoError('Failed to create cache base dir: %s' %
-                                     str(err))
+                raise CachedRepoError('Failed to create cache subdir %s: %s' %
+                                      (_subdir, str(err)))
 
     def _acquire_lock(self, repodir):
         """Acquire the repository lock"""
@@ -124,15 +130,34 @@ class CachedRepo(object):
             fcntl.flock(self.lock, fcntl.LOCK_UN)
             self.lock = None
 
+    @staticmethod
+    def _split_url(url):
+        """Split URL to base and reponame
+
+        >>> CachedRepo._split_url('http://foo.com/bar')
+        ('http://foo.com', 'bar')
+        >>> CachedRepo._split_url('foo.com:bar')
+        ('foo.com', 'bar')
+        >>> CachedRepo._split_url('/foo/bar')
+        ('/foo', 'bar')
+        >>> CachedRepo._split_url('foo/')
+        ('', 'foo')
+        """
+        sanitized = url.rstrip('/')
+        split = sanitized.rsplit('/', 1)
+        # Try to get base right for ssh-style "URLs", like git@github.com:foo
+        if len(split) == 1:
+            split = sanitized.rsplit(':', 1)
+        base = split[0] if len(split) > 1 else ''
+        repo = split[-1]
+        return (base, repo)
+
     def _init_git_repo(self, url, bare):
         """Clone / update a remote git repository"""
-        # Safe repo dir name
-        reponame = url.split('/')[-1].split(':')[-1]
-        postfix = hashlib.sha1(url).hexdigest() # pylint: disable=E1101
-        reponame = reponame + '_' + postfix
-        self.repodir = os.path.join(self.basedir, reponame)
         LOGGER.debug('Caching %s in %s' % (url, self.repodir))
-
+        # Create subdir, if it doesn't exist
+        if not os.path.exists(os.path.dirname(self.repodir)):
+            os.makedirs(os.path.dirname(self.repodir))
         # Acquire repository lock
         self._acquire_lock(self.repodir)
 

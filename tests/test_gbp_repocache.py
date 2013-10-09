@@ -181,14 +181,25 @@ class TestCachedRepo(UnitTestsBase):
             finally:
                 os.chmod(self.cachedir, s_rwx)
         repo = self.MockCachedRepo(self.orig_repo.path)
+        subdir = os.path.dirname(repo.repodir)
+        del repo
+
+        # Check cache subdir access error
+        os.chmod(subdir, 0)
+        with assert_raises(CachedRepoError):
+            try:
+                repo = self.MockCachedRepo(self.orig_repo.path)
+            finally:
+                os.chmod(subdir, s_rwx)
+        repo = self.MockCachedRepo(self.orig_repo.path)
         del repo
 
         # Check repodir delete error
-        os.chmod(self.cachedir, stat.S_IREAD | stat.S_IEXEC)
+        os.chmod(subdir, stat.S_IREAD | stat.S_IEXEC)
         with assert_raises(CachedRepoError):
             try:
                 # Change repo type -> tries to delete
                 repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
             finally:
-                os.chmod(self.cachedir, s_rwx)
+                os.chmod(subdir, s_rwx)
 
