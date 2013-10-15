@@ -1,3 +1,15 @@
+* Tue Oct 15 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.4
+- Release 0.4
+- repocache: change cached repo dir name
+  Change the cached repo directory from "<base>/<reponame>_<hash>" to
+  "<base>/<hash>/<reponame>". That is, add another directory level to the
+  cache. This change makes gbp (and gbs) see the same project directory
+  name as the end-users in their normal workflow.
+  NOTE! Repository cache should be manually cleaned after this commit, in
+  order to get rid of the stale, unused caches.
+- tests: make sure to restore dir permissions
+- repocache: more verbose debug messages
+
 * Thu Aug 08 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.3
 - Release 0.3
 - tests: split repocache tests into separate file
