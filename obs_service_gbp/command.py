@@ -146,9 +146,9 @@ def main(argv=None):
         os.chdir(repo.repodir)
         if args.rpm in ['yes','auto']:
             if args.spec is None:
-                specs_path = get_spec('./packaging/')
+                specs_path = get_spec('.')
             else:
-                specs_path = get_spec('./packaging/', name=args.spec)
+                specs_path = get_spec('.', name=args.spec)
             if specs_path is None:
                 LOGGER.error('no spec file available in packaging'
                                                          ' directory')
