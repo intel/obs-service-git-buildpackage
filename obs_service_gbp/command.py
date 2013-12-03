@@ -35,8 +35,11 @@ def get_spec(directory, name):
     try:
         res=guess_spec(directory, recursive=True,preferred_name=name)
     except NoSpecError as err:
+        print err
         if str(err).startswith('No spec file'):
             return None
+        if str(err).startswith('Multiple spec files found'):
+            return None 
     return os.path.join(res.specdir ,res.specfile)
 
 def construct_gbp_args(args):
