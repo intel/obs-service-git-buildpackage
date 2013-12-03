@@ -1,2 +1,9 @@
 obs
 rpmbuild
+
+# python
+*.py[cod]
+
+# Editor
+*.kate-swp
+
