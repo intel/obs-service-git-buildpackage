@@ -17,6 +17,9 @@
         <allowedvalue>yes</allowedvalue>
         <allowedvalue>no</allowedvalue>
     </parameter>
+    <parameter name="spec">
+        <description>specify the spec file name</description>
+    </parameter>
     <parameter name="deb">
         <description>Build Debian package</description>
         <allowedvalue>auto</allowedvalue>

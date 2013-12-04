@@ -30,14 +30,17 @@ from obs_service_gbp import LOGGER, gbplog
 from gbp_repocache import CachedRepo, CachedRepoError
 import gbp_repocache
 
-def have_spec(directory):
+def get_spec(directory, name):
     """Find if the package has spec files"""
     try:
-        guess_spec(directory, recursive=True)
+        res=guess_spec(directory, recursive=True,preferred_name=name)
     except NoSpecError as err:
+        print err
         if str(err).startswith('No spec file'):
-            return False
-    return True
+            return None
+        if str(err).startswith('Multiple spec files found'):
+            return None 
+    return os.path.join(res.specdir ,res.specfile)
 
 def construct_gbp_args(args):
     """Construct args list for git-buildpackage-rpm"""
@@ -112,6 +115,8 @@ def parse_args(argv):
                         choices=['yes', 'no'])
     parser.add_argument('--spec-vcs-tag', help='Set/update the VCS tag in the'
                                                'spec file')
+    parser.add_argument('--spec', help='specify the spec file name,'
+                               ' usefull for package with multiple spec files')
     parser.add_argument('--config', default=default_configs, action='append',
                         help='Config file to use, can be given multiple times')
     return parser.parse_args(argv)
@@ -142,8 +147,16 @@ def main(argv=None):
     orig_dir = os.path.abspath(os.curdir)
     try:
         os.chdir(repo.repodir)
-        specs_found = have_spec('.')
-        if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
+        if args.rpm in ['yes','auto']:
+            if args.spec is None:
+                specs_path = get_spec('.')
+            else:
+                specs_path = get_spec('.', name=args.spec)
+            if specs_path is None:
+                LOGGER.error('no spec file available in packaging'
+                                                         ' directory')
+                return 2
+            rpm_args.append('--git-spec-file=%s' % specs_path)
             LOGGER.info('Exporting RPM packaging files with GBP')
             LOGGER.debug('git-buildpackage-rpm args: %s' % ' '.join(rpm_args))
             ret = gbp_rpm(rpm_args)
