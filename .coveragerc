@@ -1,2 +1,2 @@
 [run]
-include = obs_service_gbp/*, gbp_repocache/*
+include = obs_service_gbp/*, obs_service_gbp_utils/*, gbp_repocache/*

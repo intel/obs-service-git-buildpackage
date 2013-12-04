@@ -32,6 +32,16 @@ It supports cloning/updating repo from git and exporting sources and packaging
 files that are managed with git-buildpackage tools.
 
 
+%package utils
+Summary:    Utility fuctions for the GBP OBS source service
+Group:      Development/Tools/Building
+Requires:   python >= 2.6
+
+%description utils
+This package contains generic utility functions for the git-buildpackage OBS
+source service.
+
+
 %package -n gbp-repocache
 Summary:    Git repository cache API
 Group:      Development/Tools/Building
@@ -73,6 +83,10 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 %dir %{_sysconfdir}/obs
 %dir %{_sysconfdir}/obs/services
 %config %{_sysconfdir}/obs/services/*
+
+%files utils
+%doc COPYING
+%{python_sitelib}/obs_service_gbp_utils
 
 %files -n gbp-repocache
 %doc COPYING
