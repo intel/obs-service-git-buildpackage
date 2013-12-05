@@ -39,6 +39,8 @@ def _demoted_child_call(uid, gid, ret_data_q, func, args, kwargs):
     try:
         if uid and uid > 0:
             os.setresuid(uid, uid, uid)
+            # Set environment
+            os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
         if gid and gid > 0:
             os.setresgid(gid, gid, gid)
     except OSError as err:
