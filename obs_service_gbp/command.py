@@ -95,6 +95,37 @@ def read_config(filenames):
     # We only use keys from one section, for now
     return dict(parser.items('general'))
 
+def gbp_export(repo, args):
+    """Export sources with GBP"""
+    rpm_args, deb_args = construct_gbp_args(args)
+    orig_dir = os.path.abspath(os.curdir)
+    try:
+        os.chdir(repo.repodir)
+        specs_found = have_spec('.')
+        if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
+            LOGGER.info('Exporting RPM packaging files with GBP')
+            LOGGER.debug('git-buildpackage-rpm args: %s' % ' '.join(rpm_args))
+            ret = fork_call(None, None, gbp_rpm, rpm_args)
+            if ret:
+                LOGGER.error('Git-buildpackage-rpm failed, unable to export '
+                             'RPM packaging files')
+                return 2
+        if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
+            LOGGER.info('Exporting Debian source package with GBP')
+            LOGGER.debug('git-buildpackage args: %s' % ' '.join(deb_args))
+            ret = fork_call(None, None, gbp_deb, deb_args)
+            if ret:
+                LOGGER.error('Git-buildpackage failed, unable to export Debian '
+                             'sources package files')
+                return 3
+    except GbpServiceError as err:
+        LOGGER.error('Internal service error when trying to run GBP: %s' % err)
+        LOGGER.error('This is most likely a configuration error (or a BUG)!')
+        return 1
+    finally:
+        os.chdir(orig_dir)
+    return 0
+
 def parse_args(argv):
     """Argument parser"""
     default_configs = ['/etc/obs/services/git-buildpackage',
@@ -138,33 +169,5 @@ def main(argv=None):
         LOGGER.error('RepoCache: %s' % str(err))
         return 1
 
-    # Export sources with GBP
-    rpm_args, deb_args = construct_gbp_args(args)
-    orig_dir = os.path.abspath(os.curdir)
-    try:
-        os.chdir(repo.repodir)
-        specs_found = have_spec('.')
-        if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
-            LOGGER.info('Exporting RPM packaging files with GBP')
-            LOGGER.debug('git-buildpackage-rpm args: %s' % ' '.join(rpm_args))
-            ret = fork_call(None, None, gbp_rpm, rpm_args)
-            if ret:
-                LOGGER.error('Git-buildpackage-rpm failed, unable to export '
-                             'RPM packaging files')
-                return 2
-        if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
-            LOGGER.info('Exporting Debian source package with GBP')
-            LOGGER.debug('git-buildpackage args: %s' % ' '.join(deb_args))
-            ret = fork_call(None, None, gbp_deb, deb_args)
-            if ret:
-                LOGGER.error('Git-buildpackage failed, unable to export Debian '
-                             'sources package files')
-                return 3
-    except GbpServiceError as err:
-        LOGGER.error('Internal service error when trying to run GBP: %s' % err)
-        LOGGER.error('This is most likely a configuration error (or a BUG)!')
-        return 1
-    finally:
-        os.chdir(orig_dir)
-
-    return 0
+    # Run GBP
+    return gbp_export(repo, args)
