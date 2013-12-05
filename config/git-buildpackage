@@ -9,6 +9,11 @@
 ## the default directory is likely not accessible by regular users.
 #repo-cache-dir = /var/cache/obs/git-buildpackage-repos/
 
+## Temporary directory for git-buildpackage
+## Default is '/tmp/obs-service-gbp/'
+## This directory must be accessible for the user/group configured below.
+#gbp-tmp-dir = /tmp/obs-service-gbp/
+
 ## User and group
 ## The user and group under which git-buildpackage is run. The service itself
 ## is run under whatever user/group the source service server is configured to

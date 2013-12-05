@@ -42,12 +42,13 @@ def have_spec(directory):
             return False
     return True
 
-def construct_gbp_args(args, outdir):
+def construct_gbp_args(args, config, outdir):
     """Construct args list for git-buildpackage-rpm"""
     # Args common to deb and rpm
     argv_common = ['--git-ignore-branch',
                    '--git-no-hooks',
-                   '--git-export-dir=%s' % outdir]
+                   '--git-export-dir=%s' % outdir,
+                   '--git-tmp-dir=%s' % config['gbp-tmp-dir']]
     if args.revision:
         argv_common.append('--git-export=%s' % args.revision)
     if args.verbose == 'yes':
@@ -74,6 +75,7 @@ def construct_gbp_args(args, outdir):
 def read_config(filenames):
     '''Read configuration file(s)'''
     defaults = {'repo-cache-dir': '/var/cache/obs/git-buildpackage-repos/',
+                'gbp-tmp-dir': '/tmp/obs-service-gbp/',
                 'gbp-user': None,
                 'gbp-group': None}
 
@@ -116,7 +118,7 @@ def gbp_export(repo, args, config):
     os.chown(tmp_out, uid, gid)
 
     # Call GBP
-    rpm_args, deb_args = construct_gbp_args(args, tmp_out)
+    rpm_args, deb_args = construct_gbp_args(args, config, tmp_out)
     orig_dir = os.path.abspath(os.curdir)
     try:
         os.chdir(repo.repodir)
