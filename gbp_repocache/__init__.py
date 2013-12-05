@@ -104,10 +104,10 @@ class CachedRepo(object):
 
     def _init_cache_dir(self):
         """Check and initialize repository cache base directory"""
-        LOGGER.debug("Using cache basedir '%s'" % self.basedir)
+        LOGGER.debug("Using cache basedir '%s'", self.basedir)
         _subdir = os.path.dirname(self.repodir)
         if not os.path.exists(_subdir):
-            LOGGER.debug('Creating missing cache subdir %s' % _subdir)
+            LOGGER.debug('Creating missing cache subdir %s', _subdir)
             try:
                 os.makedirs(_subdir)
             except OSError as err:
@@ -116,7 +116,7 @@ class CachedRepo(object):
 
     def _acquire_lock(self, repodir):
         """Acquire the repository lock"""
-        LOGGER.debug("Acquiring repository lock for %s" % repodir)
+        LOGGER.debug("Acquiring repository lock for %s", repodir)
         try:
             self.lock = open(repodir + '.lock', 'w')
         except IOError as err:
@@ -154,7 +154,7 @@ class CachedRepo(object):
 
     def _init_git_repo(self, url, bare):
         """Clone / update a remote git repository"""
-        LOGGER.debug('Caching %s in %s' % (url, self.repodir))
+        LOGGER.debug('Caching %s in %s', url, self.repodir)
         # Create subdir, if it doesn't exist
         if not os.path.exists(os.path.dirname(self.repodir)):
             os.makedirs(os.path.dirname(self.repodir))
@@ -167,7 +167,7 @@ class CachedRepo(object):
             except GitRepositoryError:
                 pass
             if not self.repo or self.repo.bare != bare:
-                LOGGER.info('Removing corrupted repo cache %s' % self.repodir)
+                LOGGER.info('Removing corrupted repo cache %s', self.repodir)
                 try:
                     self.repo = None
                     shutil.rmtree(self.repodir)
@@ -182,7 +182,7 @@ class CachedRepo(object):
                     raise CachedRepoError('Failed to fetch from remote: %s' %
                                            err)
         if not self.repo:
-            LOGGER.info('Cloning from %s' % url)
+            LOGGER.info('Cloning from %s', url)
             try:
                 self.repo = MirrorGitRepository.clone(self.repodir, url,
                                                       bare=bare)

@@ -79,10 +79,10 @@ def read_config(filenames):
                 'gbp-group': None}
 
     filenames = [os.path.expanduser(fname) for fname in filenames]
-    LOGGER.debug('Trying %s config files: %s' % (len(filenames), filenames))
+    LOGGER.debug('Trying %s config files: %s', len(filenames), filenames)
     parser = SafeConfigParser(defaults=defaults)
     read = parser.read(filenames)
-    LOGGER.debug('Read %s config files: %s' % (len(read), read))
+    LOGGER.debug('Read %s config files: %s', len(read), read)
 
     # Add our one-and-only section, if it does not exist
     if not parser.has_section('general'):
@@ -124,7 +124,7 @@ def gbp_export(repo, args, config):
         specs_found = have_spec('.')
         if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
             LOGGER.info('Exporting RPM packaging files with GBP')
-            LOGGER.debug('git-buildpackage-rpm args: %s' % ' '.join(rpm_args))
+            LOGGER.debug('git-buildpackage-rpm args: %s', ' '.join(rpm_args))
             ret = fork_call(uid, gid, gbp_rpm, rpm_args)
             if ret:
                 LOGGER.error('Git-buildpackage-rpm failed, unable to export '
@@ -132,7 +132,7 @@ def gbp_export(repo, args, config):
                 return 2
         if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
             LOGGER.info('Exporting Debian source package with GBP')
-            LOGGER.debug('git-buildpackage args: %s' % ' '.join(deb_args))
+            LOGGER.debug('git-buildpackage args: %s', ' '.join(deb_args))
             ret = fork_call(uid, gid, gbp_deb, deb_args)
             if ret:
                 LOGGER.error('Git-buildpackage failed, unable to export Debian '
@@ -142,7 +142,7 @@ def gbp_export(repo, args, config):
             shutil.move(os.path.join(tmp_out, fname),
                         os.path.join(args.outdir, fname))
     except GbpServiceError as err:
-        LOGGER.error('Internal service error when trying to run GBP: %s' % err)
+        LOGGER.error('Internal service error when trying to run GBP: %s', err)
         LOGGER.error('This is most likely a configuration error (or a BUG)!')
         return 1
     finally:
@@ -192,7 +192,7 @@ def main(argv=None):
         repo = CachedRepo(config['repo-cache-dir'], args.url)
         args.revision = repo.update_working_copy(args.revision)
     except CachedRepoError as err:
-        LOGGER.error('RepoCache: %s' % str(err))
+        LOGGER.error('RepoCache: %s', str(err))
         return 1
 
     # Run GBP
