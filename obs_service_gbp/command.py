@@ -69,7 +69,6 @@ def construct_gbp_args(args, config, outdir):
     argv_deb = ['git-buildpackage'] + argv_common
     argv_deb.extend(['--git-purge',
                      '--git-builder=%s' % deb_builder_script])
-    LOGGER.debug('rpm args' % argv_rpm)
     return (argv_rpm, argv_deb)
 
 def read_config(filenames):
