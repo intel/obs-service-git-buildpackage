@@ -8,3 +8,12 @@
 ## You probably need to define if the service is run on the client side as
 ## the default directory is likely not accessible by regular users.
 #repo-cache-dir = /var/cache/obs/git-buildpackage-repos/
+
+## User and group
+## The user and group under which git-buildpackage is run. The service itself
+## is run under whatever user/group the source service server is configured to
+## use - this user must have the privileges to set uid/gid if you configure
+## these settings. You can give the user and group as name or uid/gid number
+##directly.
+#gbp-user = gbpservice
+#gbp-group = gbpservice

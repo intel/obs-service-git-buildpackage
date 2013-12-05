@@ -20,6 +20,8 @@
 
 import os
 import argparse
+import shutil
+import tempfile
 from ConfigParser import SafeConfigParser
 
 from gbp.rpm import guess_spec, NoSpecError
@@ -27,7 +29,7 @@ from gbp.scripts.buildpackage import main as gbp_deb
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
 from obs_service_gbp import LOGGER, gbplog
-from obs_service_gbp_utils import GbpServiceError, fork_call
+from obs_service_gbp_utils import GbpServiceError, fork_call, sanitize_uid_gid
 from gbp_repocache import CachedRepo, CachedRepoError
 import gbp_repocache
 
@@ -40,15 +42,12 @@ def have_spec(directory):
             return False
     return True
 
-def construct_gbp_args(args):
+def construct_gbp_args(args, outdir):
     """Construct args list for git-buildpackage-rpm"""
     # Args common to deb and rpm
     argv_common = ['--git-ignore-branch',
-                   '--git-no-hooks']
-    if args.outdir:
-        argv_common.append('--git-export-dir=%s' % os.path.abspath(args.outdir))
-    else:
-        argv_common.append('--git-export-dir=%s' % os.path.abspath(os.curdir))
+                   '--git-no-hooks',
+                   '--git-export-dir=%s' % outdir]
     if args.revision:
         argv_common.append('--git-export=%s' % args.revision)
     if args.verbose == 'yes':
@@ -74,7 +73,9 @@ def construct_gbp_args(args):
 
 def read_config(filenames):
     '''Read configuration file(s)'''
-    defaults = {'repo-cache-dir': '/var/cache/obs/git-buildpackage-repos/'}
+    defaults = {'repo-cache-dir': '/var/cache/obs/git-buildpackage-repos/',
+                'gbp-user': None,
+                'gbp-group': None}
 
     filenames = [os.path.expanduser(fname) for fname in filenames]
     LOGGER.debug('Trying %s config files: %s' % (len(filenames), filenames))
@@ -95,9 +96,27 @@ def read_config(filenames):
     # We only use keys from one section, for now
     return dict(parser.items('general'))
 
-def gbp_export(repo, args):
+def gbp_export(repo, args, config):
     """Export sources with GBP"""
-    rpm_args, deb_args = construct_gbp_args(args)
+    # Create output directories
+    try:
+        if not os.path.exists(args.outdir):
+            os.makedirs(args.outdir)
+        tmp_out = tempfile.mkdtemp(dir=args.outdir)
+    except OSError as err:
+        LOGGER.error('Failed to create output directory: %s', err)
+        return 1
+    # Determine UID/GID
+    try:
+        uid, gid = sanitize_uid_gid(config['gbp-user'], config['gbp-group'])
+    except GbpServiceError as err:
+        LOGGER.error(err)
+        return 1
+    # Make temp outdir accessible to the GBP UID/GID
+    os.chown(tmp_out, uid, gid)
+
+    # Call GBP
+    rpm_args, deb_args = construct_gbp_args(args, tmp_out)
     orig_dir = os.path.abspath(os.curdir)
     try:
         os.chdir(repo.repodir)
@@ -105,7 +124,7 @@ def gbp_export(repo, args):
         if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
             LOGGER.info('Exporting RPM packaging files with GBP')
             LOGGER.debug('git-buildpackage-rpm args: %s' % ' '.join(rpm_args))
-            ret = fork_call(None, None, gbp_rpm, rpm_args)
+            ret = fork_call(uid, gid, gbp_rpm, rpm_args)
             if ret:
                 LOGGER.error('Git-buildpackage-rpm failed, unable to export '
                              'RPM packaging files')
@@ -113,17 +132,21 @@ def gbp_export(repo, args):
         if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
             LOGGER.info('Exporting Debian source package with GBP')
             LOGGER.debug('git-buildpackage args: %s' % ' '.join(deb_args))
-            ret = fork_call(None, None, gbp_deb, deb_args)
+            ret = fork_call(uid, gid, gbp_deb, deb_args)
             if ret:
                 LOGGER.error('Git-buildpackage failed, unable to export Debian '
                              'sources package files')
                 return 3
+        for fname in os.listdir(tmp_out):
+            shutil.move(os.path.join(tmp_out, fname),
+                        os.path.join(args.outdir, fname))
     except GbpServiceError as err:
         LOGGER.error('Internal service error when trying to run GBP: %s' % err)
         LOGGER.error('This is most likely a configuration error (or a BUG)!')
         return 1
     finally:
         os.chdir(orig_dir)
+        shutil.rmtree(tmp_out)
     return 0
 
 def parse_args(argv):
@@ -133,7 +156,7 @@ def parse_args(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', help='Remote repository URL', required=True)
-    parser.add_argument('--outdir', help='Output direcory')
+    parser.add_argument('--outdir', default='.', help='Output direcory')
     parser.add_argument('--revision', help='Remote repository URL',
                         default='HEAD')
     parser.add_argument('--rpm', choices=['auto', 'yes', 'no'], default='auto',
@@ -146,7 +169,9 @@ def parse_args(argv):
                                                'spec file')
     parser.add_argument('--config', default=default_configs, action='append',
                         help='Config file to use, can be given multiple times')
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    args.outdir = os.path.abspath(args.outdir)
+    return args
 
 def main(argv=None):
     """Main function"""
@@ -170,4 +195,4 @@ def main(argv=None):
         return 1
 
     # Run GBP
-    return gbp_export(repo, args)
+    return gbp_export(repo, args, config)

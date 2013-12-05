@@ -18,7 +18,9 @@
 # MA 02110-1301, USA.
 """Tests for the git-buildpackage OBS source service"""
 
+import grp
 import os
+import stat
 from nose.tools import assert_raises # pylint: disable=E0611
 
 from obs_service_gbp.command import main as service
@@ -27,6 +29,7 @@ from tests import UnitTestsBase
 
 class TestService(UnitTestsBase):
     """Base class for unit tests"""
+    s_rwx = stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC
 
     def _check_files(self, files, directory=''):
         """Check that the tmpdir content matches expectations"""
@@ -71,14 +74,17 @@ class TestService(UnitTestsBase):
 
     def test_gbp_rpm_failure(self):
         """Test git-buildpackage-rpm failure"""
-        assert service(['--url', self.orig_repo.path, '--outdir=foo/bar']) == 2
+        os.mkdir('foo')
+        os.chmod('foo', 0)
+        try:
+            assert service(['--url', self.orig_repo.path, '--outdir=foo']) == 1
+        finally:
+            os.chmod('foo', self.s_rwx)
         assert service(['--url', self.orig_repo.path, '--rpm=yes',
                         '--revision=source']) == 2
 
     def test_gbp_deb_failure(self):
         """Test git-buildpackage (deb) failure"""
-        assert service(['--url', self.orig_repo.path, '--rpm=no',
-                        '--outdir=foo/bar']) == 3
         assert service(['--url', self.orig_repo.path, '--deb=yes',
                         '--revision=source']) == 3
 
@@ -124,4 +130,20 @@ class TestService(UnitTestsBase):
                 == 0)
         assert not os.path.exists(default_cache), os.listdir('.')
         assert os.path.exists('my-repo-cache'), os.listdir('.')
+
+    def test_user_group_config(self):
+        """Test setting the user and group under which gbp is run"""
+        # Changing to current user/group should succeed
+        os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER'] = str(os.getuid())
+        os.environ['OBS_GIT_BUILDPACKAGE_GBP_GROUP'] = \
+                grp.getgrgid(os.getgid()).gr_name
+        assert service(['--url', self.orig_repo.path, '--revision=rpm']) == 0
+
+        # Changing to non-existent user should fail
+        os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER'] = '_non_existent_user'
+        del os.environ['OBS_GIT_BUILDPACKAGE_GBP_GROUP']
+        assert service(['--url', self.orig_repo.path, '--revision=rpm']) == 1
+
+        # Return env
+        del os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER']
 
