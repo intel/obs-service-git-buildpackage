@@ -21,7 +21,7 @@
 import grp
 import os
 import stat
-from nose.tools import assert_raises # pylint: disable=E0611
+from nose.tools import assert_raises, eq_, ok_ # pylint: disable=E0611
 
 from obs_service_gbp.command import main as service
 from tests import UnitTestsBase
@@ -35,7 +35,7 @@ class TestService(UnitTestsBase):
         """Check that the tmpdir content matches expectations"""
         found = set(os.listdir(os.path.join(self.tmpdir, directory)))
         expect = set(files)
-        assert found == expect, "Expected: %s, Found: %s" % (expect, found)
+        eq_(found, expect, "Expected: %s, Found: %s" % (expect, found))
 
     def test_invalid_options(self):
         """Test invalid options"""
@@ -44,31 +44,30 @@ class TestService(UnitTestsBase):
             service(['--foo'])
         # Option without argument
         with assert_raises(SystemExit):
-            assert service(['--url'])
+            ok_(service(['--url']))
         # Invalid repo
-        assert service(['--url=foo/bar.git']) != 0
+        ok_(service(['--url=foo/bar.git']) != 0)
 
     def test_basic_rpm_export(self):
         """Test that rpm export works"""
-        assert service(['--url', self.orig_repo.path, '--revision=rpm']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 0)
         self._check_files(['test-package.spec', 'test-package_0.1.tar.gz'])
 
     def test_basic_deb_export(self):
         """Test that deb export works"""
-        assert service(['--url', self.orig_repo.path, '--revision=deb']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--revision=deb']), 0)
         self._check_files(['test-package_0.1.dsc', 'test-package_0.1.tar.gz'])
 
     def test_empty_export(self):
         """Test case where nothing is exported"""
-        assert service(['--url', self.orig_repo.path, '--revision=source']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--revision=source']), 0)
         self._check_files([])
-        assert service(['--url', self.orig_repo.path, '--rpm=no',
-                       '--deb=no']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--rpm=no', '--deb=no']), 0)
         self._check_files([])
 
     def test_basic_dual_export(self):
         """Test that simultaneous rpm and deb export works"""
-        assert service(['--url', self.orig_repo.path]) == 0
+        eq_(service(['--url', self.orig_repo.path]), 0)
         self._check_files(['test-package.spec', 'test-package_0.1.dsc',
                            'test-package_0.1.tar.gz'])
 
@@ -77,42 +76,42 @@ class TestService(UnitTestsBase):
         os.mkdir('foo')
         os.chmod('foo', 0)
         try:
-            assert service(['--url', self.orig_repo.path, '--outdir=foo']) == 1
+            eq_(service(['--url', self.orig_repo.path, '--outdir=foo']), 1)
         finally:
             os.chmod('foo', self.s_rwx)
-        assert service(['--url', self.orig_repo.path, '--rpm=yes',
-                        '--revision=source']) == 2
+        eq_(service(['--url', self.orig_repo.path, '--rpm=yes',
+                        '--revision=source']), 2)
 
     def test_gbp_deb_failure(self):
         """Test git-buildpackage (deb) failure"""
-        assert service(['--url', self.orig_repo.path, '--deb=yes',
-                        '--revision=source']) == 3
+        eq_(service(['--url', self.orig_repo.path, '--deb=yes',
+                        '--revision=source']), 3)
 
     def test_options_outdir(self):
         """Test the --outdir option"""
         outdir = os.path.join(self.tmpdir, 'outdir')
         args = ['--url', self.orig_repo.path, '--outdir=%s' % outdir]
-        assert service(args) == 0
+        eq_(service(args), 0)
         self._check_files(['test-package.spec', 'test-package_0.1.dsc',
                            'test-package_0.1.tar.gz'], outdir)
 
     def test_options_revision(self):
         """Test the --revision option"""
-        assert service(['--url', self.orig_repo.path, '--revision=master']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--revision=master']), 0)
         self._check_files(['test-package.spec', 'test-package_0.1.dsc',
                            'test-package_0.1.tar.gz'])
-        assert service(['--url', self.orig_repo.path, '--revision=foobar']) == 1
+        eq_(service(['--url', self.orig_repo.path, '--revision=foobar']), 1)
 
     def test_options_verbose(self):
         """Test the --verbose option"""
-        assert service(['--url', self.orig_repo.path, '--verbose=yes']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--verbose=yes']), 0)
         with assert_raises(SystemExit):
             service(['--url', self.orig_repo.path, '--verbose=foob'])
 
     def test_options_spec_vcs_tag(self):
         """Test the --spec-vcs-tag option"""
-        assert service(['--url', self.orig_repo.path,
-                        '--spec-vcs-tag=orig/%(tagname)s']) == 0
+        eq_(service(['--url', self.orig_repo.path,
+                        '--spec-vcs-tag=orig/%(tagname)s']), 0)
 
     def test_options_config(self):
         """Test the --config option"""
@@ -126,10 +125,10 @@ class TestService(UnitTestsBase):
         del os.environ['OBS_GIT_BUILDPACKAGE_REPO_CACHE_DIR']
 
         # Check that the repo cache we configured is actually used
-        assert (service(['--url', self.orig_repo.path, '--config', 'my.conf'])
+        ok_((service(['--url', self.orig_repo.path, '--config', 'my.conf']))
                 == 0)
-        assert not os.path.exists(default_cache), os.listdir('.')
-        assert os.path.exists('my-repo-cache'), os.listdir('.')
+        ok_(not os.path.exists(default_cache), os.listdir('.'))
+        ok_(os.path.exists('my-repo-cache'), os.listdir('.'))
 
     def test_user_group_config(self):
         """Test setting the user and group under which gbp is run"""
@@ -137,12 +136,12 @@ class TestService(UnitTestsBase):
         os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER'] = str(os.getuid())
         os.environ['OBS_GIT_BUILDPACKAGE_GBP_GROUP'] = \
                 grp.getgrgid(os.getgid()).gr_name
-        assert service(['--url', self.orig_repo.path, '--revision=rpm']) == 0
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 0)
 
         # Changing to non-existent user should fail
         os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER'] = '_non_existent_user'
         del os.environ['OBS_GIT_BUILDPACKAGE_GBP_GROUP']
-        assert service(['--url', self.orig_repo.path, '--revision=rpm']) == 1
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 1)
 
         # Return env
         del os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER']

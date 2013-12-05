@@ -21,7 +21,7 @@
 import os
 import shutil
 import stat
-from nose.tools import assert_raises # pylint: disable=E0611
+from nose.tools import assert_raises, eq_, ok_  # pylint: disable=E0611
 
 from gbp.git.repository import GitRepositoryError
 
@@ -39,7 +39,7 @@ class TestMirrorGitRepository(UnitTestsBase):
             repo.set_config('foo', 'bar')
         repo.set_config('foo.bar', 'baz')
         repo.set_config('foo.bar', 'bax', replace=True)
-        assert repo.get_config('foo.bar') == 'bax'
+        eq_(repo.get_config('foo.bar'), 'bax')
 
 
 class TestCachedRepo(UnitTestsBase):
@@ -68,8 +68,8 @@ class TestCachedRepo(UnitTestsBase):
         """Basic test for cloning and fetching"""
         # Clone
         repo = self.MockCachedRepo(self.orig_repo.path)
-        assert repo
-        assert repo.repo.bare is not True
+        ok_(repo)
+        ok_(repo.repo.bare is not True)
         sha = repo.repo.rev_parse('master')
         path = repo.repo.path
         del repo
@@ -77,19 +77,19 @@ class TestCachedRepo(UnitTestsBase):
         self.update_repository_file(self.orig_repo, 'foo.txt', 'more data\n')
         # Fetch
         repo = self.MockCachedRepo(self.orig_repo.path)
-        assert repo
-        assert path == repo.repo.path
-        assert sha != repo.repo.rev_parse('master')
+        ok_(repo)
+        eq_(path, repo.repo.path)
+        ok_(sha != repo.repo.rev_parse('master'))
 
     def test_update_working_copy(self):
         """Test update functionality"""
         repo = self.MockCachedRepo(self.orig_repo.path)
         # Check that the refs are mapped correctly
         sha = repo.update_working_copy('HEAD~1')
-        assert sha == self.orig_repo.rev_parse('HEAD~1')
+        eq_(sha, self.orig_repo.rev_parse('HEAD~1'))
         sha = self.orig_repo.rev_parse('HEAD')
-        assert sha == repo.update_working_copy('HEAD')
-        assert sha == repo.update_working_copy(sha)
+        eq_(sha, repo.update_working_copy('HEAD'))
+        eq_(sha, repo.update_working_copy(sha))
 
         with assert_raises(CachedRepoError):
             sha = repo.update_working_copy('foo/bar')
@@ -109,7 +109,7 @@ class TestCachedRepo(UnitTestsBase):
         # from orig HEAD
         self.orig_repo.set_branch('HEAD~1')
         repo = self.MockCachedRepo(self.orig_repo.path)
-        assert repo.update_working_copy(shas[0]) == shas[0]
+        eq_(repo.update_working_copy(shas[0]), shas[0])
 
     def test_update_bare(self):
         """Test update for bare repository"""
@@ -132,7 +132,7 @@ class TestCachedRepo(UnitTestsBase):
         with assert_raises(CachedRepoError):
             repo.update_working_copy('HEAD')
         # Test valid refs, too
-        assert repo.update_working_copy('master')
+        ok_(repo.update_working_copy('master'))
 
         # Reset orig repo to original state
         self.orig_repo.set_branch(orig_branch)
@@ -148,16 +148,16 @@ class TestCachedRepo(UnitTestsBase):
         del repo
         # Update and check status
         repo = self.MockCachedRepo(self.orig_repo.path)
-        assert repo.repo.rev_parse('HEAD')
+        ok_(repo.repo.rev_parse('HEAD'))
 
     def test_changing_repotype(self):
         """Test changing repo type from bare -> normal"""
         # Clone
         repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
-        assert repo.repo.bare == True
+        eq_(repo.repo.bare, True)
         del repo
         repo = self.MockCachedRepo(self.orig_repo.path, bare=False)
-        assert repo.repo.bare == False
+        eq_(repo.repo.bare, False)
 
     def test_cache_access_error(self):
         """Test cached directory with invalid permissions"""
