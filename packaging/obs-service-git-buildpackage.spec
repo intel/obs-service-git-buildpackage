@@ -85,9 +85,11 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 %config %{_sysconfdir}/obs/services/*
 
 %files utils
+%defattr(-,root,root,-)
 %doc COPYING
 %{python_sitelib}/obs_service_gbp_utils
 
 %files -n gbp-repocache
+%defattr(-,root,root,-)
 %doc COPYING
 %{python_sitelib}/gbp_repocache
