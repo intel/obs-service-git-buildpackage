@@ -89,23 +89,23 @@ class CachedRepo(object):
     """Object representing a cached repository"""
 
     def __init__(self, base_dir, url, bare=False):
-        self.basedir = base_dir
-        self.repodir = None
-        self.repo = None
-        self.lock = None
+        self._basedir = base_dir
+        self._repodir = None
+        self._repo = None
+        self._lock = None
 
         # Safe repo dir name
         urlbase, reponame = self._split_url(url)
         subdir = hashlib.sha1(urlbase).hexdigest() # pylint: disable=E1101
-        self.repodir = os.path.join(self.basedir, subdir, reponame)
+        self._repodir = os.path.join(self._basedir, subdir, reponame)
 
         self._init_cache_dir()
         self._init_git_repo(url, bare)
 
     def _init_cache_dir(self):
         """Check and initialize repository cache base directory"""
-        LOGGER.debug("Using cache basedir '%s'", self.basedir)
-        _subdir = os.path.dirname(self.repodir)
+        LOGGER.debug("Using cache basedir '%s'", self._basedir)
+        _subdir = os.path.dirname(self._repodir)
         if not os.path.exists(_subdir):
             LOGGER.debug('Creating missing cache subdir %s', _subdir)
             try:
@@ -118,18 +118,18 @@ class CachedRepo(object):
         """Acquire the repository lock"""
         LOGGER.debug("Acquiring repository lock for %s", repodir)
         try:
-            self.lock = open(repodir + '.lock', 'w')
+            self._lock = open(repodir + '.lock', 'w')
         except IOError as err:
             raise CachedRepoError('Unable to open repo lock file: %s' % err)
-        fcntl.flock(self.lock, fcntl.LOCK_EX)
+        fcntl.flock(self._lock, fcntl.LOCK_EX)
         LOGGER.debug("Repository lock acquired")
 
     def _release_lock(self):
         """Release the repository lock"""
-        if self.lock:
-            fcntl.flock(self.lock, fcntl.LOCK_UN)
-            self.lock.close()
-            self.lock = None
+        if self._lock:
+            fcntl.flock(self._lock, fcntl.LOCK_UN)
+            self._lock.close()
+            self._lock = None
 
     @staticmethod
     def _split_url(url):
@@ -155,43 +155,53 @@ class CachedRepo(object):
 
     def _init_git_repo(self, url, bare):
         """Clone / update a remote git repository"""
-        LOGGER.debug('Caching %s in %s', url, self.repodir)
+        LOGGER.debug('Caching %s in %s', url, self._repodir)
         # Create subdir, if it doesn't exist
-        if not os.path.exists(os.path.dirname(self.repodir)):
-            os.makedirs(os.path.dirname(self.repodir))
+        if not os.path.exists(os.path.dirname(self._repodir)):
+            os.makedirs(os.path.dirname(self._repodir))
         # Acquire repository lock
-        self._acquire_lock(self.repodir)
+        self._acquire_lock(self._repodir)
 
-        if os.path.exists(self.repodir):
+        if os.path.exists(self._repodir):
             try:
-                self.repo = MirrorGitRepository(self.repodir)
+                self._repo = MirrorGitRepository(self._repodir)
             except GitRepositoryError:
                 pass
-            if not self.repo or self.repo.bare != bare:
-                LOGGER.info('Removing corrupted repo cache %s', self.repodir)
+            if not self._repo or self._repo.bare != bare:
+                LOGGER.info('Removing corrupted repo cache %s', self._repodir)
                 try:
-                    self.repo = None
-                    shutil.rmtree(self.repodir)
+                    self._repo = None
+                    shutil.rmtree(self._repodir)
                 except OSError as err:
                     raise CachedRepoError('Failed to remove repo cache dir: %s'
                                          % str(err))
             else:
                 LOGGER.info('Fetching from remote')
                 try:
-                    self.repo.force_fetch()
+                    self._repo.force_fetch()
                 except GitRepositoryError as err:
                     raise CachedRepoError('Failed to fetch from remote: %s' %
                                            err)
-        if not self.repo:
+        if not self._repo:
             LOGGER.info('Cloning from %s', url)
             try:
-                self.repo = MirrorGitRepository.clone(self.repodir, url,
+                self._repo = MirrorGitRepository.clone(self._repodir, url,
                                                       bare=bare)
             except GitRepositoryError as err:
                 raise CachedRepoError('Failed to clone: %s' % err)
 
     def __del__(self):
         self._release_lock()
+
+    @property
+    def repo(self):
+        """Get the GitRepository instance of the cached repo"""
+        return self._repo
+
+    @property
+    def repodir(self):
+        """Get the file system path to the cached git repository"""
+        return self._repodir
 
     def update_working_copy(self, commitish='HEAD', submodules=True):
         """Reset HEAD to the given commit-ish"""
