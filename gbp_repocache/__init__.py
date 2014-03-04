@@ -128,6 +128,7 @@ class CachedRepo(object):
         """Release the repository lock"""
         if self.lock:
             fcntl.flock(self.lock, fcntl.LOCK_UN)
+            self.lock.close()
             self.lock = None
 
     @staticmethod
