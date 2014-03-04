@@ -58,7 +58,7 @@ class TestCachedRepo(UnitTestsBase):
 
         # Try updating from non-existing repo
         repo = self.MockCachedRepo(self.orig_repo.path)
-        del repo
+        repo.close()
         shutil.move(self.orig_repo.path, self.orig_repo.path + '.tmp')
         with assert_raises(CachedRepoError):
             repo = self.MockCachedRepo(self.orig_repo.path)
@@ -72,7 +72,7 @@ class TestCachedRepo(UnitTestsBase):
         ok_(repo.repo.bare is not True)
         sha = repo.repo.rev_parse('master')
         path = repo.repo.path
-        del repo
+        repo.close()
         # Make new commit in "upstream"
         self.update_repository_file(self.orig_repo, 'foo.txt', 'more data\n')
         # Fetch
@@ -103,13 +103,29 @@ class TestCachedRepo(UnitTestsBase):
                 self.orig_repo.rev_parse('HEAD')]
         repo = self.MockCachedRepo(self.orig_repo.path)
         repo.update_working_copy(shas[-1])
-        del repo
+        repo.close()
 
         # Change upstream, after this index cached repo will be out-of-sync
         # from orig HEAD
         self.orig_repo.set_branch('HEAD~1')
         repo = self.MockCachedRepo(self.orig_repo.path)
         eq_(repo.update_working_copy(shas[0]), shas[0])
+
+    def test_close(self):
+        """Test closing of cached repo"""
+        repo = self.MockCachedRepo(self.orig_repo.path)
+        ok_(repo)
+        # Operating on a closed repository should fail
+        repo.close()
+        with assert_raises(CachedRepoError):
+            repo.update_working_copy('HEAD')
+        with assert_raises(CachedRepoError):
+            _repo_obj = repo.repo
+        with assert_raises(CachedRepoError):
+            _repo_dir = repo.repodir
+
+        # Multiple closes should be ok
+        repo.close()
 
     def test_update_bare(self):
         """Test update for bare repository"""
@@ -120,7 +136,7 @@ class TestCachedRepo(UnitTestsBase):
     def test_invalid_remote_head(self):
         """Test clone/update from remote whose HEAD is invalid"""
         repo = self.MockCachedRepo(self.orig_repo.path)
-        del repo
+        repo.close()
 
         # Make remote HEAD point to a non-existent branch
         orig_branch = self.orig_repo.get_branch()
@@ -145,7 +161,7 @@ class TestCachedRepo(UnitTestsBase):
         shutil.rmtree(os.path.join(repo.repo.path, '.git/refs'))
         with assert_raises(GitRepositoryError):
             repo.repo.rev_parse('HEAD')
-        del repo
+        repo.close()
         # Update and check status
         repo = self.MockCachedRepo(self.orig_repo.path)
         ok_(repo.repo.rev_parse('HEAD'))
@@ -155,7 +171,7 @@ class TestCachedRepo(UnitTestsBase):
         # Clone
         repo = self.MockCachedRepo(self.orig_repo.path, bare=True)
         eq_(repo.repo.bare, True)
-        del repo
+        repo.close()
         repo = self.MockCachedRepo(self.orig_repo.path, bare=False)
         eq_(repo.repo.bare, False)
 
@@ -171,7 +187,7 @@ class TestCachedRepo(UnitTestsBase):
             finally:
                 os.chmod(self.workdir, s_rwx)
         repo = self.MockCachedRepo(self.orig_repo.path)
-        del repo
+        repo.close()
 
         # Check cache base dir access error
         os.chmod(self.cachedir, 0)
@@ -182,7 +198,7 @@ class TestCachedRepo(UnitTestsBase):
                 os.chmod(self.cachedir, s_rwx)
         repo = self.MockCachedRepo(self.orig_repo.path)
         subdir = os.path.dirname(repo.repodir)
-        del repo
+        repo.close()
 
         # Check cache subdir access error
         os.chmod(subdir, 0)
@@ -192,7 +208,7 @@ class TestCachedRepo(UnitTestsBase):
             finally:
                 os.chmod(subdir, s_rwx)
         repo = self.MockCachedRepo(self.orig_repo.path)
-        del repo
+        repo.close()
 
         # Check repodir delete error
         os.chmod(subdir, stat.S_IREAD | stat.S_IEXEC)

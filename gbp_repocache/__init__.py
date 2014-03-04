@@ -193,18 +193,36 @@ class CachedRepo(object):
     def __del__(self):
         self._release_lock()
 
+    def _check_instance(self):
+        """Check that the cached repo is "open", raise an exception if not."""
+        if not self._lock:
+            raise CachedRepoError('Trying to operate on closed CachedRepo'
+                                   'instance')
+
     @property
     def repo(self):
         """Get the GitRepository instance of the cached repo"""
+        self._check_instance()
         return self._repo
 
     @property
     def repodir(self):
         """Get the file system path to the cached git repository"""
+        self._check_instance()
         return self._repodir
+
+    def close(self):
+        """Close the cached git repository rendering it unusable.
+        Releases locks to make the cache directory usable for another
+        CachedRepository object. You should not operate on closed CachedRepo
+        instances.
+        """
+        self._release_lock()
+        self._repo = None
 
     def update_working_copy(self, commitish='HEAD', submodules=True):
         """Reset HEAD to the given commit-ish"""
+        self._check_instance()
         if self.repo.bare:
             raise CachedRepoError('Cannot update working copy of a bare repo')
 
