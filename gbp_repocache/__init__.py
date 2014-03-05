@@ -44,6 +44,28 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             raise GitRepositoryError('Failed to set config %s=%s (%s)' %
                                      (name, value, stderr))
 
+    def get_ref(self, ref):
+        """Get a ref - i.e. where it points to"""
+        stdout, _stderr, ret = self._git_inout('symbolic-ref', [ref])
+        if ret:
+            return self.rev_parse(ref)
+        else:
+            return stdout.splitlines()[0]
+
+    def set_ref(self, ref, value):
+        """Change a ref"""
+        if value.startswith('refs/'):
+            _stdout, stderr, ret = self._git_inout('symbolic-ref', [ref, value])
+            if ret:
+                raise GitRepositoryError('Failed to set symbolic ref: %s' %
+                                         stderr)
+        else:
+            # Write directly to the file. This is not as intelligent as
+            # git-update-ref but this way we can set the ref to anything
+            # (e.g. an non-existent sha-1)
+            with open(os.path.join(self.git_dir, ref), 'w') as ref_file:
+                ref_file.write(value + '\n')
+
     def force_fetch(self):
         """Fetch with specific arguments"""
         # Update all refs
@@ -53,8 +75,8 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             self._git_command('fetch', ['-q', '-u', 'origin', 'HEAD'])
         except GitRepositoryError:
             # If remote HEAD is invalid, invalidate FETCH_HEAD, too
-            with open(os.path.join(self.git_dir, 'FETCH_HEAD'), 'w') as fhead:
-                fhead.write('0000000000000000000000000000000000000000\n')
+            self.set_ref('FETCH_HEAD',
+                         '0000000000000000000000000000000000000000')
 
     def force_checkout(self, commitish):
         """Checkout commitish"""
@@ -200,8 +222,8 @@ class CachedRepo(object):
         # Update HEAD from FETCH_HEAD, so that HEAD points to remote HEAD.
         # We do it this way because FETCH_HEAD may point to an invalid object
         # and we don't wont to update the working copy at this point.
-        shutil.copyfile(os.path.join(self.repo.git_dir, 'FETCH_HEAD'),
-                        os.path.join(self.repo.git_dir, 'HEAD'))
+        self.repo.set_ref('HEAD', self.repo.get_ref('FETCH_HEAD'))
+
         # Clean: just in case - this should be never ever really be necessary
         # unless somebody manually hacks the cached repository introducing
         # local changes
