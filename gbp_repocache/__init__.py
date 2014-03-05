@@ -228,10 +228,10 @@ class CachedRepo(object):
 
         # Update HEAD from FETCH_HEAD, so that HEAD points to remote HEAD.
         # We do it this way because FETCH_HEAD may point to an invalid object
-        # and we don't wont to update the working copy at this point.
+        # and we don't want to update the working copy at this point.
         shutil.copyfile(os.path.join(self.repo.git_dir, 'FETCH_HEAD'),
                         os.path.join(self.repo.git_dir, 'HEAD'))
-        # Clean: just in case - this should be never ever really be necessary
+        # Clean: just in case - this should never ever really be necessary
         # unless somebody manually hacks the cached repository introducing
         # local changes
         self.repo.force_clean()
