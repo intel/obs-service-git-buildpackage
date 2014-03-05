@@ -1,5 +1,5 @@
 # Set to 0 if "normal release"
-%define pre_release 0pre1
+%define pre_release 0
 
 Name:           obs-service-git-buildpackage
 License:        GPL-2.0+

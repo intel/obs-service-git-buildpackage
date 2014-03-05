@@ -1,3 +1,28 @@
+* Wed Mar 05 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.5
+- Release 0.5
+- Run GBP in a separate thread
+- Config option to set user/group for running GBP
+  Add new options to the configuration file to be able to set the
+  user/group under which git-buildpackage(-rpm) is being run.
+  This is done by spawning a child process, then changing UID/GID
+  and calling gbp there.
+- tests: utilize ok_() and eq_() from nose tools
+  In order to getter better assert messages.
+- Config file option for gbp tmp directory
+  Add a new config file option for configuring the temporary directory
+  that git-buildpackage uses when it is run.
+- Fixes/features in repocache
+  * CachedRepo: make attribute variables private
+  * CachedRepo: implement close() method
+    For invalidating the object without the need of deleting it.
+  * MirrorGitRepository: methods for setting/getting ref
+  * MirrorGitRepository: fix git-fetch failure when local HEAD is invalid
+    Git fetch fails if local HEAD is a non-symbolic ref and points to a
+    non-existent object.
+    We get into this state in CachedRepo if the remote HEAD is invalid (e.g.
+    points to a non-existent branch) as we forcefully invalidate local HEAD
+    in this case, too.
+
 * Tue Oct 15 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.4
 - Release 0.4
 - repocache: change cached repo dir name
