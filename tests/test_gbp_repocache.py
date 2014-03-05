@@ -57,6 +57,28 @@ class TestMirrorGitRepository(UnitTestsBase):
         repo.set_ref('MY_REF', sha1)
         eq_(repo.get_ref('MY_REF'), sha1)
 
+    def test_force_fetch(self):
+        """Test fetching"""
+        repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path)
+
+        # Make remote HEAD invalid
+        orig_branch = self.orig_repo.get_branch()
+        with open(os.path.join(self.orig_repo.git_dir, 'HEAD'), 'w') as head:
+            head.write('ref: refs/heads/non-existent-branch\n')
+
+        # Local HEAD should be invalid after fetch
+        repo.force_fetch()
+        eq_(repo.get_ref('FETCH_HEAD'),
+            '0000000000000000000000000000000000000000')
+
+        # Fetch should succeed even if local head is invalid
+        repo.set_ref('HEAD', '1234567890123456789012345678901234567890')
+        repo.force_fetch()
+        eq_(repo.get_ref('HEAD'), '1234567890123456789012345678901234567890')
+
+        # Restore orig repo HEAD
+        self.orig_repo.set_branch(orig_branch)
+
 
 class TestCachedRepo(UnitTestsBase):
     """Test CachedRepo class"""
@@ -147,6 +169,7 @@ class TestCachedRepo(UnitTestsBase):
         # Local HEAD should be invalid, now
         with assert_raises(CachedRepoError):
             repo.update_working_copy('HEAD')
+
         # Test valid refs, too
         assert repo.update_working_copy('master')
 
