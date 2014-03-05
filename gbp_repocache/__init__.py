@@ -68,15 +68,22 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
 
     def force_fetch(self):
         """Fetch with specific arguments"""
+        # Set HEAD temporarily as fetch with an invalid non-symbolic HEAD fails
+        orig_head = self.get_ref('HEAD')
+        self.set_ref('HEAD', 'refs/heads/non-existent-tmp-for-fetching')
+
         # Update all refs
-        self._git_command('fetch', ['-q', '-u', '-p', 'origin'])
         try:
-            # Fetch remote HEAD separately
-            self._git_command('fetch', ['-q', '-u', 'origin', 'HEAD'])
-        except GitRepositoryError:
-            # If remote HEAD is invalid, invalidate FETCH_HEAD, too
-            self.set_ref('FETCH_HEAD',
-                         '0000000000000000000000000000000000000000')
+            self._git_command('fetch', ['-q', '-u', '-p', 'origin'])
+            try:
+                # Fetch remote HEAD separately
+                self._git_command('fetch', ['-q', '-u', 'origin', 'HEAD'])
+            except GitRepositoryError:
+                # If remote HEAD is invalid, invalidate FETCH_HEAD, too
+                self.set_ref('FETCH_HEAD',
+                             '0000000000000000000000000000000000000000')
+        finally:
+            self.set_ref('HEAD', orig_head)
 
     def force_checkout(self, commitish):
         """Checkout commitish"""
