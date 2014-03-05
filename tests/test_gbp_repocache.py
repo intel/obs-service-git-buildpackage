@@ -41,6 +41,22 @@ class TestMirrorGitRepository(UnitTestsBase):
         repo.set_config('foo.bar', 'bax', replace=True)
         eq_(repo.get_config('foo.bar'), 'bax')
 
+    def test_get_set_ref(self):
+        """Test setting and getting ref"""
+        repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path)
+        remote_head = 'refs/heads/' + self.orig_repo.get_branch()
+
+        eq_(repo.get_ref('HEAD'), remote_head)
+        with assert_raises(GitRepositoryError):
+            repo.get_ref('MY_REF')
+
+        repo.set_ref('MY_REF', repo.get_ref('HEAD'))
+        eq_(repo.get_ref('MY_REF'), remote_head)
+
+        sha1 = repo.rev_parse('HEAD')
+        repo.set_ref('MY_REF', sha1)
+        eq_(repo.get_ref('MY_REF'), sha1)
+
 
 class TestCachedRepo(UnitTestsBase):
     """Test CachedRepo class"""
