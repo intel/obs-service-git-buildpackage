@@ -1,3 +1,12 @@
+* Thu Mar 06 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.4.1
+- Fixes in repocache (Fixes: TINF-487)
+  * MirrorGitRepository: fix git-fetch failure when local HEAD is invalid
+    Git fetch fails if local HEAD is a non-symbolic ref and points to a
+    non-existent object.
+    We get into this state in CachedRepo if the remote HEAD is invalid (e.g.
+    points to a non-existent branch) as we forcefully invalidate local HEAD
+    in this case, too.
+
 * Tue Oct 15 2013 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.4
 - Release 0.4
 - repocache: change cached repo dir name

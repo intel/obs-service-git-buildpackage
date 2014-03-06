@@ -5,7 +5,7 @@ Name:           obs-service-git-buildpackage
 License:        GPL-2.0+
 Group:          Development/Tools/Building
 Summary:        Get sources from a repository managed with the git-buildpackage suite
-Version:        0.4
+Version:        0.4.1
 %if 0%{?opensuse_bs} && "%{pre_release}" != "0"
 Release:        %{pre_release}.<CI_CNT>.<B_CNT>
 %else
