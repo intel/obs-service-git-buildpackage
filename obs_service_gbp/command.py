@@ -30,6 +30,7 @@ from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
 from obs_service_gbp import LOGGER, gbplog
 from obs_service_gbp_utils import GbpServiceError, fork_call, sanitize_uid_gid
+from obs_service_gbp_utils import write_treeish_meta
 from gbp_repocache import CachedRepo, CachedRepoError
 import gbp_repocache
 
@@ -170,6 +171,9 @@ def parse_args(argv):
                                                'spec file')
     parser.add_argument('--config', default=default_configs, action='append',
                         help='Config file to use, can be given multiple times')
+    parser.add_argument('--git-meta', metavar='FILENAME',
+                        help='Write data about the exported revision into '
+                             'FILENAME in json format')
     args = parser.parse_args(argv)
     args.outdir = os.path.abspath(args.outdir)
     return args
@@ -196,4 +200,14 @@ def main(argv=None):
         return 1
 
     # Run GBP
-    return gbp_export(repo, args, config)
+    ret = gbp_export(repo, args, config)
+
+    # Write git meta file
+    if not ret and args.git_meta:
+        try:
+            write_treeish_meta(repo.repo, args.revision, args.outdir,
+                               args.git_meta)
+        except GbpServiceError as err:
+            LOGGER.error(err)
+            ret = 1
+    return ret
