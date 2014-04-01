@@ -109,6 +109,10 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             repo.force_fetch()
             return repo
 
+    def list_tags(self, obj):
+        """List tags pointing at certain object"""
+        return self._git_inout('tag', ['--points-at', obj])[0].splitlines()
+
     def get_tag_info(self, tag):
         """Look up data of a tag"""
         stdout, _stderr, ret = self._git_inout('cat-file', ['tag', tag])

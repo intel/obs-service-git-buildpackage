@@ -79,6 +79,18 @@ class TestMirrorGitRepository(UnitTestsBase):
         # Restore orig repo HEAD
         self.orig_repo.set_branch(orig_branch)
 
+    def test_list_tags(self):
+        """Test list_tags() method"""
+        repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path)
+
+        # No tags pointing to HEAD
+        repo.create_tag('tag1', msg='Tag 1', commit='HEAD^')
+        eq_(repo.list_tags('HEAD'), [])
+
+        # One tag pointing to HEAD
+        repo.create_tag('tag2', msg='Tag 2')
+        eq_(repo.list_tags('HEAD'), ['tag2'])
+
     def test_get_tag_info(self):
         """Test get_tag_info() method"""
         repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path)
