@@ -79,6 +79,47 @@ class TestMirrorGitRepository(UnitTestsBase):
         # Restore orig repo HEAD
         self.orig_repo.set_branch(orig_branch)
 
+    def test_get_tag_info(self):
+        """Test get_tag_info() method"""
+        repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path)
+        tagger = {'name': 'John Doe',
+                  'email': 'j@example.com',
+                  'date': '1390000000 +0200'}
+        os.environ['GIT_COMMITTER_NAME'] = tagger['name']
+        os.environ['GIT_COMMITTER_EMAIL'] = tagger['email']
+        os.environ['GIT_COMMITTER_DATE'] = tagger['date']
+
+        # Non-tag
+        with assert_raises(GitRepositoryError):
+            info = repo.get_tag_info('HEAD')
+
+        # Completely empty message
+        repo.create_tag('tag1', msg=' ')
+        info = repo.get_tag_info('tag1')
+        eq_(info['tagger'], tagger)
+        eq_(info['subject'], '')
+        eq_(info['body'], '')
+        eq_(info['sha1'], repo.rev_parse('tag1'))
+
+        # Empty message body
+        repo.create_tag('tag2', msg='Tag subject')
+        info = repo.get_tag_info('tag2')
+        eq_(info['tagger'], tagger)
+        eq_(info['subject'], 'Tag subject')
+        eq_(info['body'], '')
+
+        # Multi-line subject with body
+        repo.create_tag('tag3', msg='Tag\nsubject\n\nTag\nbody')
+        info = repo.get_tag_info('tag3')
+        eq_(info['tagger'], tagger)
+        eq_(info['subject'], 'Tag subject')
+        eq_(info['body'], 'Tag\nbody\n')
+
+        # Clean environmemt
+        del os.environ['GIT_COMMITTER_NAME']
+        del os.environ['GIT_COMMITTER_EMAIL']
+        del os.environ['GIT_COMMITTER_DATE']
+
 
 class TestCachedRepo(UnitTestsBase):
     """Test CachedRepo class"""

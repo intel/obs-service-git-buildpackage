@@ -22,6 +22,7 @@ import os
 import hashlib
 import shutil
 import fcntl
+import re
 
 import gbp.log as gbplog
 from gbp.git.repository import GitRepository, GitRepositoryError
@@ -107,6 +108,40 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             repo.set_config('remote.origin.fetch', '+refs/*:refs/*', True)
             repo.force_fetch()
             return repo
+
+    def get_tag_info(self, tag):
+        """Look up data of a tag"""
+        stdout, _stderr, ret = self._git_inout('cat-file', ['tag', tag])
+        if ret:
+            raise GitRepositoryError("'%s' is not an annotated tag" % tag)
+
+        # Very old tags may not have tagger info, use None as default values
+        info = {'tagger': {'name': None, 'email': None, 'date': None}}
+
+        info['sha1'] = self.rev_parse(tag)
+        tagger_re = re.compile(
+                        r'tagger (?P<name>\S.+) <(?P<email>\S+)> (?P<date>.+)')
+        num = 0
+        lines = stdout.splitlines()
+        for num, line in enumerate(lines):
+            match = tagger_re.match(line)
+            if match:
+                info['tagger'] = match.groupdict()
+            if not line:
+                break
+
+        # Parse subject, skip the blank line after tag/tagger info
+        subject_lines = []
+        for num, line in enumerate(lines[num+1:], num+1):
+            if not line:
+                break
+            subject_lines.append(line)
+        info['subject'] = ' '.join(subject_lines)
+
+        # Get message body, skip the blank line after subject
+        info['body'] = ''.join([line + '\n' for line in lines[num+1:]])
+
+        return info
 
 
 class CachedRepoError(Exception):
