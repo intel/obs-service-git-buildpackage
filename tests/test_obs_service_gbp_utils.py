@@ -19,13 +19,17 @@
 """Tests for the GBP OBS service helper functionality"""
 
 import grp
+import json
 import pwd
 import os
 from nose.tools import assert_raises, eq_, ok_  # pylint: disable=E0611
 from multiprocessing import Queue
 
-from obs_service_gbp_utils import (fork_call, _demoted_child_call,
-                                   GbpServiceError, _RET_FORK_OK)
+from gbp_repocache import MirrorGitRepository
+from obs_service_gbp_utils import fork_call, _demoted_child_call, _RET_FORK_OK
+from obs_service_gbp_utils import GbpServiceError, write_treeish_meta
+
+from tests import UnitTestsBase
 
 
 class _DummyException(Exception):
@@ -108,4 +112,101 @@ class TestForkCall(object):
             self._no_fork_call(None, 99999, self._dummy_ok)
         with assert_raises(_DummyException):
             self._no_fork_call(self._uid, self._gid, self._dummy_raise)
+
+class TestGitMeta(UnitTestsBase):
+    """Test writing treeish meta into a file"""
+
+    @classmethod
+    def setup_class(cls):
+        """Set-up tests"""
+        # Fake committer and author
+        author = {'name': 'John Doe',
+                  'email': 'j@example.com',
+                  'date': '1390000000 +0200'}
+        os.environ['GIT_AUTHOR_NAME'] = author['name']
+        os.environ['GIT_AUTHOR_EMAIL'] = author['email']
+        os.environ['GIT_AUTHOR_DATE'] = author['date']
+        committer = {'name': 'Jane Doe',
+                     'email': 'j2@example.com',
+                     'date': '1391000000 +0200'}
+        os.environ['GIT_COMMITTER_NAME'] = committer['name']
+        os.environ['GIT_COMMITTER_EMAIL'] = committer['email']
+        os.environ['GIT_COMMITTER_DATE'] = committer['date']
+
+        # Initialize repo
+        super(TestGitMeta, cls).setup_class()
+        cls.repo = MirrorGitRepository.clone('myrepo', cls._template_repo.path)
+
+        # Create test tag
+        cls.repo.create_tag('tag', msg='Subject\n\nBody')
+
+        # Reference meta
+        cls.tag_meta = {'sha1': cls.repo.rev_parse('tag'),
+                        'tagger': committer,
+                        'subject': 'Subject',
+                        'body': 'Body\n'}
+
+        commit = cls.repo.rev_parse('tag^0')
+        cls.commit_meta = {'sha1': commit,
+                           'author': author,
+                           'committer': committer,
+                           'subject': 'Add debian packaging files',
+                           'body': '',
+                           'files':
+                                {'A': ['debian/changelog', 'debian/control']}}
+
+    @classmethod
+    def teardown_class(cls):
+        """Clean-up"""
+        del os.environ['GIT_AUTHOR_NAME']
+        del os.environ['GIT_AUTHOR_EMAIL']
+        del os.environ['GIT_AUTHOR_DATE']
+        del os.environ['GIT_COMMITTER_NAME']
+        del os.environ['GIT_COMMITTER_EMAIL']
+        del os.environ['GIT_COMMITTER_DATE']
+        super(TestGitMeta, cls).teardown_class()
+
+    def test_tag(self):
+        """Test meta from tag object"""
+        write_treeish_meta(self.repo, 'tag', '.', 'meta1.txt')
+        # Read back and check
+        with open('meta1.txt') as meta_fp:
+            meta = json.load(meta_fp)
+        eq_(meta['treeish'], 'tag')
+        eq_(meta['tag'], self.tag_meta)
+        eq_(meta['commit'], self.commit_meta)
+
+    def test_commit(self):
+        """Test meta from commit object"""
+        write_treeish_meta(self.repo, 'HEAD', '.', 'meta2.txt')
+        # Read back and check
+        with open('meta2.txt') as meta_fp:
+            meta = json.load(meta_fp)
+        eq_(meta['treeish'], 'HEAD')
+        ok_('tag' not in meta)
+        eq_(meta['commit'], self.commit_meta)
+
+    def test_tree(self):
+        """Test meta from tree object"""
+        tree = self.repo.write_tree()
+        write_treeish_meta(self.repo, tree, '.', 'meta3.txt')
+        # Read back and check
+        with open('meta3.txt') as meta_fp:
+            meta = json.load(meta_fp)
+        eq_(meta['treeish'], tree)
+        ok_('tag' not in meta)
+        ok_('commit' not in meta)
+
+    def test_failures(self):
+        write_treeish_meta(self.repo, 'HEAD', '.', 'meta4.txt')
+
+        # Overwriting existing file should fail and not change file
+        orig_stat = os.stat('meta4.txt')
+        with assert_raises(GbpServiceError):
+            write_treeish_meta(self.repo, 'tag', '.', 'meta4.txt')
+        eq_(os.stat('meta4.txt'), orig_stat)
+
+        # Non-existent dir -> failure
+        with assert_raises(GbpServiceError):
+            write_treeish_meta(self.repo, 'tag', 'non-existent-dir', 'meta.txt')
 

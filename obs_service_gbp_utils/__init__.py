@@ -18,6 +18,7 @@
 # MA 02110-1301, USA.
 """Helper functionality for the GBP OBS source service"""
 
+import json
 import os
 import grp
 import pwd
@@ -94,4 +95,42 @@ def fork_call(user, group, func, *args, **kwargs):
         return ret_data
     else:
         raise ret_data
+
+
+def _commit_info_in_json(repo, committish):
+    """Get info about a committish in json-serializable format"""
+    ret = {}
+    info = repo.get_commit_info(committish)
+    ret['sha1'] = repo.rev_parse('%s^0' % committish)
+    ret['subject'] = info['subject']
+    ret['body'] = info['body']
+    ret['author'] = {'name': info['author'].name,
+                     'email': info['author'].email,
+                     'date': info['author'].date}
+    ret['committer'] = {'name': info['committer'].name,
+                        'email': info['committer'].email,
+                        'date': info['committer'].date}
+    ret['files'] = info['files']
+    return ret
+
+def write_treeish_meta(repo, treeish, outdir, filename):
+    """Write all information about a treeish in json format to a file"""
+    meta = {'treeish': treeish}
+    obj_type = repo.get_obj_type(treeish)
+    if obj_type == 'tag':
+        meta['tag'] = repo.get_tag_info(treeish)
+    if obj_type in ('tag', 'commit'):
+        meta['commit'] = _commit_info_in_json(repo, treeish)
+
+    # No dir components allowed in filename
+    filepath = os.path.join(outdir, os.path.basename(filename))
+
+    if os.path.exists(filepath):
+        raise GbpServiceError("File '%s' already exists, refusing to "
+                              "overwrite" % filename)
+    try:
+        with open(filepath, 'w') as meta_fp:
+            json.dump(meta, meta_fp, indent=4)
+    except IOError as err:
+        raise GbpServiceError("Failed to write '%s': %s" % (filename, err))
 
