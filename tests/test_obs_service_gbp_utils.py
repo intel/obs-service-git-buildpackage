@@ -198,6 +198,7 @@ class TestGitMeta(UnitTestsBase):
         ok_('commit' not in meta)
 
     def test_failures(self):
+        """Failure cases"""
         write_treeish_meta(self.repo, 'HEAD', '.', 'meta4.txt')
 
         # Overwriting existing file should fail and not change file
