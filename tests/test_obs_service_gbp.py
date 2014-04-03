@@ -20,12 +20,22 @@
 
 import grp
 import json
+import mock
 import os
 import stat
 from nose.tools import assert_raises, eq_, ok_ # pylint: disable=E0611
 
 from obs_service_gbp.command import main as service
 from tests import UnitTestsBase
+
+
+class FakeGbpError(Exception):
+    """Exception for testing gbp crashes"""
+    pass
+
+def _mock_gbp():
+    """Fake gbp main function for testing"""
+    raise FakeGbpError()
 
 
 class TestService(UnitTestsBase):
@@ -87,6 +97,16 @@ class TestService(UnitTestsBase):
         """Test git-buildpackage (deb) failure"""
         eq_(service(['--url', self.orig_repo.path, '--deb=yes',
                         '--revision=source']), 3)
+
+    @mock.patch('obs_service_gbp.command.gbp_deb', _mock_gbp)
+    def test_deb_crash(self):
+        """Test crash in git-buildpackage"""
+        eq_(service(['--url', self.orig_repo.path, '--revision=deb']), 1)
+
+    @mock.patch('obs_service_gbp.command.gbp_rpm', _mock_gbp)
+    def test_rpm_crash(self):
+        """Test crash in git-buildpackage-rpm"""
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 1)
 
     def test_options_outdir(self):
         """Test the --outdir option"""

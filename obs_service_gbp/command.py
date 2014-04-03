@@ -29,8 +29,8 @@ from gbp.scripts.buildpackage import main as gbp_deb
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
 from obs_service_gbp import LOGGER, gbplog
-from obs_service_gbp_utils import GbpServiceError, fork_call, sanitize_uid_gid
-from obs_service_gbp_utils import write_treeish_meta
+from obs_service_gbp_utils import GbpServiceError, GbpChildBTError, fork_call
+from obs_service_gbp_utils import sanitize_uid_gid, write_treeish_meta
 from gbp_repocache import CachedRepo, CachedRepoError
 import gbp_repocache
 
@@ -142,6 +142,11 @@ def gbp_export(repo, args, config):
         for fname in os.listdir(tmp_out):
             shutil.move(os.path.join(tmp_out, fname),
                         os.path.join(args.outdir, fname))
+    except GbpChildBTError as err:
+        LOGGER.error('Unhandled exception in GBP:\n'
+                     '%s', err.prettyprint_tb())
+        LOGGER.error('Failed to export packaging files')
+        return 1
     except GbpServiceError as err:
         LOGGER.error('Internal service error when trying to run GBP: %s', err)
         LOGGER.error('This is most likely a configuration error (or a BUG)!')
