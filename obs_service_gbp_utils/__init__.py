@@ -24,7 +24,7 @@ import grp
 import pwd
 import sys
 from multiprocessing import Process, Queue
-
+from traceback import format_exception_only, extract_tb, format_list
 
 _RET_FORK_OK = 0
 _RET_FORK_ERR = 1
@@ -33,6 +33,22 @@ _RET_FORK_ERR = 1
 class GbpServiceError(Exception):
     """General error class for the source service"""
     pass
+
+class GbpChildBTError(Exception):
+    """Exception for handling unhandled child exceptions in fork_call()"""
+    def __init__(self, *args):
+        self.typ, self.val, traceback = sys.exc_info()
+        self.tb_list = extract_tb(traceback)
+        super(GbpChildBTError, self).__init__(*args)
+
+    def prettyprint_tb(self):
+        """Get traceback in a format easier to comprehend"""
+        child_tb = format_list(self.tb_list)
+        child_tb += format_exception_only(self.typ, self.val)
+        sep = '-' * 4 + ' CHILD TRACEBACK ' + '-' * 50 + '\n'
+        pp_tb = sep + ''.join(child_tb) + sep
+        return pp_tb
+
 
 def _demoted_child_call(uid, gid, ret_data_q, func, args, kwargs):
     """Call a function/method with different uid/gid"""
@@ -52,7 +68,7 @@ def _demoted_child_call(uid, gid, ret_data_q, func, args, kwargs):
     try:
         ret = func(*args, **kwargs)
     except Exception as err:
-        ret_data_q.put(err)
+        ret_data_q.put(GbpChildBTError())
         sys.exit(_RET_FORK_ERR)
     else:
         ret_data_q.put(ret)

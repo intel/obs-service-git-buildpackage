@@ -27,7 +27,8 @@ from multiprocessing import Queue
 
 from gbp_repocache import MirrorGitRepository
 from obs_service_gbp_utils import fork_call, _demoted_child_call, _RET_FORK_OK
-from obs_service_gbp_utils import GbpServiceError, write_treeish_meta
+from obs_service_gbp_utils import write_treeish_meta
+from obs_service_gbp_utils import GbpServiceError, GbpChildBTError
 
 from tests import UnitTestsBase
 
@@ -85,11 +86,13 @@ class TestForkCall(object):
 
     def test_fail(self):
         """Tests for function call failures"""
-        with assert_raises(_DummyException):
+        with assert_raises(GbpChildBTError) as exc:
             fork_call(None, None, self._dummy_raise)
+        eq_(exc.exception.typ, _DummyException)
 
-        with assert_raises(TypeError):
+        with assert_raises(GbpChildBTError) as exc:
             fork_call(None, None, self._dummy_ok, 'unexptected_arg')
+        eq_(exc.exception.typ, TypeError)
 
     def test_demoted_call_no(self):
         """Test running with different UID/GID"""
@@ -110,8 +113,9 @@ class TestForkCall(object):
             self._no_fork_call(99999, None, self._dummy_ok)
         with assert_raises(GbpServiceError):
             self._no_fork_call(None, 99999, self._dummy_ok)
-        with assert_raises(_DummyException):
+        with assert_raises(GbpChildBTError) as exc:
             self._no_fork_call(self._uid, self._gid, self._dummy_raise)
+        eq_(exc.exception.typ, _DummyException)
 
 class TestGitMeta(UnitTestsBase):
     """Test writing treeish meta into a file"""
