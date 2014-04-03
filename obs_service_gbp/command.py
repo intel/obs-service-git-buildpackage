@@ -174,13 +174,18 @@ def parse_args(argv):
                         choices=['yes', 'no'])
     parser.add_argument('--spec-vcs-tag', help='Set/update the VCS tag in the'
                                                'spec file')
-    parser.add_argument('--config', default=default_configs, action='append',
+    parser.add_argument('--config', action='append',
                         help='Config file to use, can be given multiple times')
     parser.add_argument('--git-meta', metavar='FILENAME',
                         help='Write data about the exported revision into '
                              'FILENAME in json format')
     args = parser.parse_args(argv)
     args.outdir = os.path.abspath(args.outdir)
+
+    # Use default config files if --config was not defined
+    if args.config is None:
+        args.config = default_configs
+
     return args
 
 def main(argv=None):

@@ -151,6 +151,14 @@ class TestService(UnitTestsBase):
         ok_(not os.path.exists(default_cache), os.listdir('.'))
         ok_(os.path.exists('my-repo-cache'), os.listdir('.'))
 
+    def test_options_config2(self):
+        """Test that empty/non-existent config file is ok"""
+        with open('my.conf', 'w') as conf:
+            conf.write('[foo-section]\n')
+
+        ok_((service(['--url', self.orig_repo.path, '--config', 'my.conf']))
+                == 0)
+
     def test_options_git_meta(self):
         """Test the --git-meta option"""
         eq_(service(['--url', self.orig_repo.path, '--git-meta=_git_meta']), 0)
