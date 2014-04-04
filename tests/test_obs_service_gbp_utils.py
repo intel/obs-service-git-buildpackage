@@ -22,6 +22,7 @@ import grp
 import json
 import pwd
 import os
+from functools import partial
 from nose.tools import assert_raises, eq_, ok_  # pylint: disable=E0611
 from multiprocessing import Queue
 
@@ -51,7 +52,8 @@ class TestForkCall(object):
         """For testing demoted call without actually forking"""
         data_q = Queue()
         try:
-            _demoted_child_call(uid, gid, data_q, func, args, kwargs)
+            _demoted_child_call(uid, gid, data_q,
+                                partial(func, *args, **kwargs))
         except SystemExit as err:
             ret_code = err.code
         ret_data = data_q.get()

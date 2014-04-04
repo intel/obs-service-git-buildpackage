@@ -23,6 +23,7 @@ import os
 import grp
 import pwd
 import sys
+from functools import partial
 from multiprocessing import Process, Queue
 from traceback import format_exception_only, extract_tb, format_list
 
@@ -50,7 +51,7 @@ class GbpChildBTError(Exception):
         return pp_tb
 
 
-def _demoted_child_call(uid, gid, ret_data_q, func, args, kwargs):
+def _demoted_child_call(uid, gid, ret_data_q, func):
     """Call a function/method with different uid/gid"""
     # Set UID and GID
     try:
@@ -66,7 +67,8 @@ def _demoted_child_call(uid, gid, ret_data_q, func, args, kwargs):
         sys.exit(_RET_FORK_ERR)
     # Call the function
     try:
-        ret = func(*args, **kwargs)
+        # Func must be a callable without arguments
+        ret = func()
     except Exception as err:
         ret_data_q.put(GbpChildBTError())
         sys.exit(_RET_FORK_ERR)
@@ -101,8 +103,8 @@ def fork_call(user, group, func, *args, **kwargs):
 
     # Run function in a child process
     data_q = Queue()
-    child = Process(target=_demoted_child_call, args=(uid, gid, data_q, func,
-                                                      args, kwargs))
+    child = Process(target=_demoted_child_call,
+                    args=(uid, gid, data_q, partial(func, *args, **kwargs)))
     child.start()
     child.join()
     ret_data = data_q.get()
