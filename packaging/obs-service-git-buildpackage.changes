@@ -1,3 +1,15 @@
+* Fri Apr 04 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.6
+- Release 0.6
+- New option for creating a git-meta file
+  Add a new 'git-meta' option for writing metadata about the exported
+  treeish into a text file in json format. The argument for the option is
+  the filename to write into.
+  NOTE! Be careful with the filename: the service fails if the filename
+  already exists in the exported files.
+- Internal features:
+  * MirrorGitRepository: add get_tag_info() method
+  * utils: new function for writing git tree-ish meta informat
+
 * Wed Mar 05 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.5
 - Release 0.5
 - Run GBP in a separate thread
