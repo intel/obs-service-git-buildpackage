@@ -96,8 +96,8 @@ def sanitize_uid_gid(user, group):
         raise GbpServiceError('Unable to find UID/GID: %s' % err)
     return (uid, gid)
 
-def fork_call(user, group, func, *args, **kwargs):
-    """Fork and call a function. The function should return an integer"""
+def _fork_call(user, group, func, *args, **kwargs):
+    """Wrapper for actual logic of fork_call()"""
     # Get numerical uid and gid
     uid, gid = sanitize_uid_gid(user, group)
 
@@ -114,6 +114,10 @@ def fork_call(user, group, func, *args, **kwargs):
     else:
         raise ret_data
 
+def fork_call(user, group, func):
+    """Fork and call a function. The function should return an integer.
+       Returns a callable that runs the function."""
+    return partial(_fork_call, user, group, func)
 
 def _commit_info_in_json(repo, committish):
     """Get info about a committish in json-serializable format"""

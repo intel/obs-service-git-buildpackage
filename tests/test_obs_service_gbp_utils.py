@@ -48,19 +48,22 @@ class TestForkCall(object):
         self._group = grp.getgrgid(self._gid).gr_name
 
     @staticmethod
-    def _no_fork_call(uid, gid, func, *args, **kwargs):
+    def _no_fork_call(uid, gid, func):
         """For testing demoted call without actually forking"""
-        data_q = Queue()
-        try:
-            _demoted_child_call(uid, gid, data_q,
-                                partial(func, *args, **kwargs))
-        except SystemExit as err:
-            ret_code = err.code
-        ret_data = data_q.get()
-        if ret_code == _RET_FORK_OK:
-            return ret_data
-        else:
-            raise ret_data
+        def _no_fork_call_runner(uid, gid, func, *args, **kwargs):
+            """Actual workhorse"""
+            data_q = Queue()
+            try:
+                _demoted_child_call(uid, gid, data_q,
+                                    partial(func, *args, **kwargs))
+            except SystemExit as err:
+                ret_code = err.code
+            ret_data = data_q.get()
+            if ret_code == _RET_FORK_OK:
+                return ret_data
+            else:
+                raise ret_data
+        return partial(_no_fork_call_runner, uid, gid, func)
 
     @staticmethod
     def _dummy_ok():
@@ -79,44 +82,44 @@ class TestForkCall(object):
 
     def test_success(self):
         """Basic test for successful call"""
-        eq_(fork_call(None, None, self._dummy_ok), 'ok')
+        eq_(fork_call(None, None, self._dummy_ok)(), 'ok')
 
-        eq_(fork_call(None, None, self._dummy_args, 1, '2', arg3='foo'),
+        eq_(fork_call(None, None, self._dummy_args)(1, '2', arg3='foo'),
             (1, '2', 'foo'))
 
-        ok_(os.getpid() != fork_call(None, None, os.getpid))
+        ok_(os.getpid() != fork_call(None, None, os.getpid)())
 
     def test_fail(self):
         """Tests for function call failures"""
         with assert_raises(GbpChildBTError) as exc:
-            fork_call(None, None, self._dummy_raise)
+            fork_call(None, None, self._dummy_raise)()
         eq_(exc.exception.typ, _DummyException)
 
         with assert_raises(GbpChildBTError) as exc:
-            fork_call(None, None, self._dummy_ok, 'unexptected_arg')
+            fork_call(None, None, self._dummy_ok)('unexptected_arg')
         eq_(exc.exception.typ, TypeError)
 
     def test_demoted_call_no(self):
         """Test running with different UID/GID"""
-        eq_(fork_call(self._name, self._group, self._dummy_ok), 'ok')
-        eq_(fork_call(self._uid, None, self._dummy_ok), 'ok')
-        eq_(fork_call(None, self._gid, self._dummy_ok), 'ok')
+        eq_(fork_call(self._name, self._group, self._dummy_ok)(), 'ok')
+        eq_(fork_call(self._uid, None, self._dummy_ok)(), 'ok')
+        eq_(fork_call(None, self._gid, self._dummy_ok)(), 'ok')
 
-        eq_(self._no_fork_call(self._uid, self._gid, self._dummy_ok), 'ok')
+        eq_(self._no_fork_call(self._uid, self._gid, self._dummy_ok)(), 'ok')
 
     def test_demoted_call_fail(self):
         """Test running with invalid UID/GID"""
         with assert_raises(GbpServiceError):
-            fork_call('_non_existent_user', None, self._dummy_ok)
+            fork_call('_non_existent_user', None, self._dummy_ok)()
         with assert_raises(GbpServiceError):
-            fork_call(None, '_non_existen_group', self._dummy_ok)
+            fork_call(None, '_non_existen_group', self._dummy_ok)()
 
         with assert_raises(GbpServiceError):
-            self._no_fork_call(99999, None, self._dummy_ok)
+            self._no_fork_call(99999, None, self._dummy_ok)()
         with assert_raises(GbpServiceError):
-            self._no_fork_call(None, 99999, self._dummy_ok)
+            self._no_fork_call(None, 99999, self._dummy_ok)()
         with assert_raises(GbpChildBTError) as exc:
-            self._no_fork_call(self._uid, self._gid, self._dummy_raise)
+            self._no_fork_call(self._uid, self._gid, self._dummy_raise)()
         eq_(exc.exception.typ, _DummyException)
 
 class TestGitMeta(UnitTestsBase):

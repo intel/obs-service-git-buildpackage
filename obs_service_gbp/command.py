@@ -126,7 +126,7 @@ def gbp_export(repo, args, config):
         if args.rpm == 'yes' or (args.rpm == 'auto' and specs_found):
             LOGGER.info('Exporting RPM packaging files with GBP')
             LOGGER.debug('git-buildpackage-rpm args: %s', ' '.join(rpm_args))
-            ret = fork_call(uid, gid, gbp_rpm, rpm_args)
+            ret = fork_call(uid, gid, gbp_rpm)(rpm_args)
             if ret:
                 LOGGER.error('Git-buildpackage-rpm failed, unable to export '
                              'RPM packaging files')
@@ -134,7 +134,7 @@ def gbp_export(repo, args, config):
         if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
             LOGGER.info('Exporting Debian source package with GBP')
             LOGGER.debug('git-buildpackage args: %s', ' '.join(deb_args))
-            ret = fork_call(uid, gid, gbp_deb, deb_args)
+            ret = fork_call(uid, gid, gbp_deb)(deb_args)
             if ret:
                 LOGGER.error('Git-buildpackage failed, unable to export Debian '
                              'sources package files')
