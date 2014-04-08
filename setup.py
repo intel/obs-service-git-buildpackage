@@ -22,17 +22,17 @@
 from setuptools import setup
 
 
-def get_version():
-    """Get version from the spec file"""
+def tag_from_spec(tag):
+    """Get value of an rpm tag from the spec file"""
     with open('packaging/obs-service-git-buildpackage.spec', 'r') as spec:
         for line in spec.readlines():
-            if line.lower().startswith('version:'):
+            if line.lower().startswith(tag.lower() + ':'):
                 return line.split(':', 1)[1].strip()
-    raise Exception('ERROR: unable to parse version from spec file')
+    raise Exception("ERROR: unable to parse '%s' from spec file" % tag)
 
 setup(name='obs_service_gbp',
-      version=get_version(),
-      description='OBS source service utilizing git-buildpackage',
+      version=tag_from_spec('Version'),
+      description=tag_from_spec('Summary'),
       author='Markus Lehtonen',
       author_email='markus.lehtonen@linux.intel.com',
       packages=['obs_service_gbp', 'obs_service_gbp_utils', 'gbp_repocache'],
