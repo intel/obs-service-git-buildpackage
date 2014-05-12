@@ -36,6 +36,7 @@ files that are managed with git-buildpackage tools.
 Summary:    Utility fuctions for the GBP OBS source service
 Group:      Development/Tools/Building
 Requires:   python >= 2.6
+Requires:   gbp-repocache = %{version}
 
 %description utils
 This package contains generic utility functions for the git-buildpackage OBS
