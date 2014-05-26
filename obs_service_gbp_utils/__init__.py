@@ -144,6 +144,12 @@ def write_treeish_meta(repo, treeish, outdir, filename):
     if obj_type in ('tag', 'commit'):
         meta['commit'] = _commit_info_in_json(repo, treeish)
 
+        # Get information about (annotated) tags pointing to the commit
+        meta['tags'] = []
+        for tag in repo.list_tags(treeish + '^0'):
+            if repo.get_obj_type(tag) == 'tag':
+                meta['tags'].append(repo.get_tag_info(tag))
+
     # No dir components allowed in filename
     filepath = os.path.join(outdir, os.path.basename(filename))
 

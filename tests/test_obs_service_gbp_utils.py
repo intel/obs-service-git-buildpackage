@@ -146,8 +146,10 @@ class TestGitMeta(UnitTestsBase):
         super(TestGitMeta, cls).setup_class()
         cls.repo = MirrorGitRepository.clone('myrepo', cls._template_repo.path)
 
-        # Create test tag
+        # Create test tags
         cls.repo.create_tag('tag', msg='Subject\n\nBody')
+        cls.repo.create_tag('tag2', msg='Subject 2')
+        cls.repo.create_tag('light_tag')
 
         # Reference meta
         cls.tag_meta = {'tagname': 'tag',
@@ -164,6 +166,12 @@ class TestGitMeta(UnitTestsBase):
                            'body': '',
                            'files':
                                 {'A': ['debian/changelog', 'debian/control']}}
+        cls.tags_meta = [cls.tag_meta,
+                         {'tagname': 'tag2',
+                          'sha1': cls.repo.rev_parse('tag2'),
+                          'tagger': committer,
+                          'subject': 'Subject 2',
+                          'body': ''}]
 
     @classmethod
     def teardown_class(cls):
@@ -184,6 +192,7 @@ class TestGitMeta(UnitTestsBase):
             meta = json.load(meta_fp)
         eq_(meta['treeish'], 'tag')
         eq_(meta['tag'], self.tag_meta)
+        eq_(meta['tags'], self.tags_meta)
         eq_(meta['commit'], self.commit_meta)
 
     def test_commit(self):
@@ -194,6 +203,7 @@ class TestGitMeta(UnitTestsBase):
             meta = json.load(meta_fp)
         eq_(meta['treeish'], 'HEAD')
         ok_('tag' not in meta)
+        eq_(meta['tags'], self.tags_meta)
         eq_(meta['commit'], self.commit_meta)
 
     def test_tree(self):
@@ -205,6 +215,7 @@ class TestGitMeta(UnitTestsBase):
             meta = json.load(meta_fp)
         eq_(meta['treeish'], tree)
         ok_('tag' not in meta)
+        ok_('tags' not in meta)
         ok_('commit' not in meta)
 
     def test_failures(self):
