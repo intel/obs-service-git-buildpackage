@@ -150,7 +150,8 @@ class TestGitMeta(UnitTestsBase):
         cls.repo.create_tag('tag', msg='Subject\n\nBody')
 
         # Reference meta
-        cls.tag_meta = {'sha1': cls.repo.rev_parse('tag'),
+        cls.tag_meta = {'tagname': 'tag',
+                        'sha1': cls.repo.rev_parse('tag'),
                         'tagger': committer,
                         'subject': 'Subject',
                         'body': 'Body\n'}

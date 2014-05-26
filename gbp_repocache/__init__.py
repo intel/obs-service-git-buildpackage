@@ -127,6 +127,8 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             match = tagger_re.match(line)
             if match:
                 info['tagger'] = match.groupdict()
+            if line.startswith('tag '):
+                info['tagname'] = line.split(' ', 1)[1]
             if not line:
                 break
 
