@@ -48,6 +48,7 @@ def construct_gbp_args(args, config, outdir):
     # Args common to deb and rpm
     argv_common = ['--git-ignore-branch',
                    '--git-no-hooks',
+                   '--git-notify=off',
                    '--git-export-dir=%s' % outdir,
                    '--git-tmp-dir=%s' % config['gbp-tmp-dir']]
     if args.revision:
