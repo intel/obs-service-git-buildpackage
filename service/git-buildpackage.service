@@ -23,6 +23,9 @@
         <allowedvalue>yes</allowedvalue>
         <allowedvalue>no</allowedvalue>
     </parameter>
+    <parameter name="git-meta">
+        <description>Export meta data about the revision into a file in JSON format.</description>
+    </parameter>
     <parameter name="verbose">
         <description>Enable verbose output. For debugging purposes.</description>
         <allowedvalue>no</allowedvalue>
