@@ -56,16 +56,23 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
     def set_ref(self, ref, value):
         """Change a ref"""
         if value.startswith('refs/'):
-            _stdout, stderr, ret = self._git_inout('symbolic-ref', [ref, value])
-            if ret:
+            _stdout, stderr, ret = self._git_inout('symbolic-ref',
+                                                   ['-q', ref, value],
+                                                   capture_stderr=True)
+            # Currently, git-symbolic-ref always exits with 0.
+            # Thus, we check stderr, too
+            if ret or stderr:
                 raise GitRepositoryError('Failed to set symbolic ref: %s' %
                                          stderr)
         else:
             # Write directly to the file. This is not as intelligent as
             # git-update-ref but this way we can set the ref to anything
             # (e.g. an non-existent sha-1)
-            with open(os.path.join(self.git_dir, ref), 'w') as ref_file:
-                ref_file.write(value + '\n')
+            try:
+                with open(os.path.join(self.git_dir, ref), 'w') as ref_file:
+                    ref_file.write(value + '\n')
+            except IOError as err:
+                raise GitRepositoryError('Failed write ref %s: %s' % (ref, err))
 
     def force_fetch(self):
         """Fetch with specific arguments"""

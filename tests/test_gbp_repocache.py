@@ -57,6 +57,12 @@ class TestMirrorGitRepository(UnitTestsBase):
         repo.set_ref('MY_REF', sha1)
         eq_(repo.get_ref('MY_REF'), sha1)
 
+        # Test failure cases (unable to create ref)
+        with assert_raises(GitRepositoryError):
+            repo.set_ref('refs/heads', sha1)
+        with assert_raises(GitRepositoryError):
+            repo.set_ref('refs/heads', 'refs/heads/master')
+
     def test_force_fetch(self):
         """Test fetching"""
         repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path)
