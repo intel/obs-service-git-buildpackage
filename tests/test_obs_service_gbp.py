@@ -26,6 +26,7 @@ import stat
 from nose.tools import assert_raises, eq_, ok_ # pylint: disable=E0611
 
 from obs_service_gbp.command import main as service
+from obs_service_gbp_utils import GbpServiceError
 from tests import UnitTestsBase
 
 
@@ -36,6 +37,10 @@ class FakeGbpError(Exception):
 def _mock_gbp():
     """Fake gbp main function for testing"""
     raise FakeGbpError()
+
+def _mock_fork_call(*args, **kwargs):
+    """Fake fork_call function for testing"""
+    raise GbpServiceError("Mock error, args: %s, kwargs: %s" % (args, kwargs))
 
 
 class TestService(UnitTestsBase):
@@ -107,6 +112,11 @@ class TestService(UnitTestsBase):
     def test_rpm_crash(self):
         """Test crash in git-buildpackage-rpm"""
         eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 1)
+
+    @mock.patch('obs_service_gbp.command.fork_call', _mock_fork_call)
+    def test_service_error(self):
+        """Test internal/configuration error"""
+        eq_(service(['--url', self.orig_repo.path]), 1)
 
     def test_options_outdir(self):
         """Test the --outdir option"""
