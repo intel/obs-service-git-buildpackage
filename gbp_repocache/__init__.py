@@ -233,9 +233,6 @@ class CachedRepo(object):
     def _init_git_repo(self, url, bare):
         """Clone / update a remote git repository"""
         LOGGER.debug('Caching %s in %s', url, self._repodir)
-        # Create subdir, if it doesn't exist
-        if not os.path.exists(os.path.dirname(self._repodir)):
-            os.makedirs(os.path.dirname(self._repodir))
         # Acquire repository lock
         self._acquire_lock(self._repodir)
 
