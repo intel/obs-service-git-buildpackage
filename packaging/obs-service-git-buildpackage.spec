@@ -76,7 +76,7 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING
+%doc COPYING DEPLOYMENT
 %dir /usr/lib/obs
 %dir /usr/lib/obs/service
 /usr/lib/obs/service/*

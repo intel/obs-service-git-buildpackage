@@ -1,0 +1,27 @@
+DEPLOYMENT INSTRUCTIONS OF OBS-SERVICE-GIT-BUILDPACKAGE
+========================================================
+
+Instructions for deployment from binary rpm packages.
+
+New installation
+----------------
+- Install the package
+  # zypper install obs-service-git-buildpackage
+- On server installation:
+  * Check the configuration file
+    # vim /etc/obs/services/git-buildpackage
+  * Make sure that the obs source service is installed and running:
+    # zypper install obs-source_service
+    # systemctl restart obsservice.service
+- On workstation installation you may edit the system-wide config(see above)
+  or use a user-specific config:
+  $ mkdir -p ~/.obs
+  $ cp /etc/obs/services/git-buildpackage ~/.obs
+  $ vim ~/.obs/git-buildpackage
+
+Update instructions
+-------------------
+- Update the package
+  # zypper update obs-service-git-buildpackage
+- On server installation, restart the obs source service
+  # systemctl restart obsservice.service
