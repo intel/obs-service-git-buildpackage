@@ -1,3 +1,33 @@
+* Tue Jun 03 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.7
+- Release 0.7
+- utils: handle child exceptions in fork_call() more gracefully
+  Create a new exception type GbpChildBTError for handling exceptions that
+  happen in the function that is called in fork_call(). Allows to catch
+  exceptions in the called "child" function and print out correct
+  traceback.
+- Handle gbp crashes gracefully
+  Catch unhandled exceptions in gitbuildpackage[-rpm] in which case print
+  a traceback and return an error.
+- Don't read default config files if --config is given
+- utils: change fork_call() to return a callable
+- Include tag name in the git treeish meta data
+  Add tag name to the information returned by the
+  MirrorGitRepository.get_tag_info() method.  This information will also
+  be automatically written by the write_treeish_meta() function, and thus,
+  available in the meta data exported when using --git-meta.
+- Include tag list in the git treeish meta data
+  List all annotated tags pointing at the exported commit and tag object.
+  Adds a new 'tags' key (an array) under the 'commit' and 'tag' keys.
+- MirrorGitRepository:
+  * Add list_tags() method for getting tags pointing at a certain object.
+  * Fix error handling in set_ref() method
+- Disable git-buildpackage desktop notifications
+- packaging: -utils subpackage depends on gbp-repocache
+- Add git-meta option in to the .service file
+- Add deployment instructions
+- Better unit test coverage
+- Some minor internal code refactoring
+
 * Fri Apr 04 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.6
 - Release 0.6
 - New option for creating a git-meta file
