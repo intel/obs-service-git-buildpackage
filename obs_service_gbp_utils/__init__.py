@@ -135,20 +135,30 @@ def _commit_info_in_json(repo, committish):
     ret['files'] = info['files']
     return ret
 
+def _tag_list_in_json(repo, treeish):
+    """Get list of tags pointing to a treeish object in json format"""
+    # Get information about (annotated) tags pointing to the treeish object
+    info = []
+    for tag in repo.list_tags(treeish):
+        # Only take annotated tags, and, filter out the treeish itself in case
+        # it is a tag.
+        if (repo.get_obj_type(tag) == 'tag' and
+            repo.rev_parse(tag) != repo.rev_parse(treeish)):
+            info.append(repo.get_tag_info(tag))
+    return info
+
 def write_treeish_meta(repo, treeish, outdir, filename):
     """Write all information about a treeish in json format to a file"""
     meta = {'treeish': treeish}
     obj_type = repo.get_obj_type(treeish)
     if obj_type == 'tag':
         meta['tag'] = repo.get_tag_info(treeish)
+        meta['tag']['tags'] = _tag_list_in_json(repo, treeish)
     if obj_type in ('tag', 'commit'):
         meta['commit'] = _commit_info_in_json(repo, treeish)
-
         # Get information about (annotated) tags pointing to the commit
-        meta['tags'] = []
-        for tag in repo.list_tags(treeish + '^0'):
-            if repo.get_obj_type(tag) == 'tag':
-                meta['tags'].append(repo.get_tag_info(tag))
+        meta['commit']['tags'] = []
+        meta['commit']['tags'] = _tag_list_in_json(repo, treeish + '^0')
 
     # No dir components allowed in filename
     filepath = os.path.join(outdir, os.path.basename(filename))
