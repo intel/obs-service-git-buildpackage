@@ -44,7 +44,7 @@ def _mock_fork_call(*args, **kwargs):
 
 
 class TestService(UnitTestsBase):
-    """Base class for unit tests"""
+    """Tests for the obsservice-git-buildpackage script"""
     s_rwx = stat.S_IREAD | stat.S_IWRITE | stat.S_IEXEC
 
     def _check_files(self, files, directory=''):

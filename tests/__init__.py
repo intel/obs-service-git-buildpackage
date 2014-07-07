@@ -98,7 +98,7 @@ class UnitTestsBase(object):
         self.cachedir = None
 
     def setup(self):
-        """Test class setup"""
+        """Test case setup"""
         # Change to a temporary directory
         self.tmpdir = os.path.abspath(tempfile.mkdtemp(prefix='test_',
                                                        dir=self.workdir))
