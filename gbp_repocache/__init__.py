@@ -18,19 +18,19 @@
 # MA 02110-1301, USA.
 """Git repository cache"""
 
+import logging
 import os
 import hashlib
 import shutil
 import fcntl
 import re
 
-import gbp.log as gbplog
 from gbp.git.repository import GitRepository, GitRepositoryError
 
 
 # Setup logging
-LOGGER = gbplog.getLogger('gbp-repocache')
-LOGGER.setLevel(gbplog.INFO)
+LOGGER = logging.getLogger('gbp-repocache')
+LOGGER.setLevel(logging.INFO)
 
 
 class MirrorGitRepository(GitRepository): # pylint: disable=R0904
