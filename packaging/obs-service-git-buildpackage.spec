@@ -93,4 +93,6 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 %files -n gbp-repocache
 %defattr(-,root,root,-)
 %doc COPYING
+%{_bindir}/repocache-adm
 %{python_sitelib}/gbp_repocache
+%{python_sitelib}/repocache_adm

@@ -37,8 +37,12 @@ setup(name='obs_service_gbp',
       author_email='markus.lehtonen@linux.intel.com',
       url=tag_from_spec('URL'),
       license=tag_from_spec('License'),
-      packages=['obs_service_gbp', 'obs_service_gbp_utils', 'gbp_repocache'],
+      packages=['obs_service_gbp', 'obs_service_gbp_utils', 'gbp_repocache',
+                'repocache_adm'],
       data_files=[('/usr/lib/obs/service', ['service/git-buildpackage',
                     'service/git-buildpackage.service']),
                   ('/etc/obs/services', ['config/git-buildpackage'])],
+      entry_points={
+          'console_scripts': ['repocache-adm = repocache_adm.adm:main']
+          }
      )
