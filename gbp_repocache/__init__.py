@@ -47,7 +47,8 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
 
     def get_ref(self, ref):
         """Get a ref - i.e. where it points to"""
-        stdout, _stderr, ret = self._git_inout('symbolic-ref', [ref])
+        stdout, _stderr, ret = self._git_inout('symbolic-ref', [ref],
+                                               capture_stderr=True)
         if ret:
             return self.rev_parse(ref)
         else:
