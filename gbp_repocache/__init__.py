@@ -100,7 +100,7 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
 
     def force_clean(self):
         """Clean repository"""
-        self._git_command('clean', ['-f', '-d', '-x'])
+        self._git_command('clean', ['-f', '-f', '-d', '-x'])
 
     @classmethod
     def clone(cls, path, url, bare=False):
