@@ -16,6 +16,7 @@ Source:         %{name}-%{version}.tar.bz2
 Requires:       git-buildpackage
 Requires:       git-buildpackage-rpm
 Requires:       gbp-repocache = %{version}-%{release}
+Requires:       %{name}-utils = %{version}-%{release}
 BuildRequires:  python
 BuildRequires:  python-setuptools
 %if 0%{?do_unittests}
