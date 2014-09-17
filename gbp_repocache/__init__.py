@@ -75,15 +75,65 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             except IOError as err:
                 raise GitRepositoryError('Failed write ref %s: %s' % (ref, err))
 
-    def force_fetch(self):
+    def _symlink_refs(self, tgt_path):
+        """Symlink refs directory - a relative symlink inside GIT_DIR"""
+        tgt_abspath = os.path.abspath(os.path.join(self.git_dir, tgt_path))
+        refs_path = os.path.join(self.git_dir, 'refs')
+        # Create symlink target directory
+        if not os.path.exists(tgt_abspath):
+            os.makedirs(tgt_abspath)
+        # Remove existing directory or symlink
+        if not os.path.islink(refs_path):
+            LOGGER.info('Removing old refs directory %s', refs_path)
+            shutil.rmtree(refs_path)
+        elif os.path.exists(refs_path):
+            os.unlink(refs_path)
+
+        LOGGER.debug("Symlinking %s -> %s", tgt_path, refs_path)
+        os.symlink(tgt_path, refs_path)
+
+    def force_fetch(self, refs_hack=False):
         """Fetch with specific arguments"""
         # Set HEAD temporarily as fetch with an invalid non-symbolic HEAD fails
         orig_head = self.get_ref('HEAD')
         self.set_ref('HEAD', 'refs/heads/non-existent-tmp-for-fetching')
 
-        # Update all refs
+        if refs_hack:
+            # Create temporary refs directory for fetching
+            # We need this because Gerrit is able to create refs/heads/* that
+            # git refuses to fetch (to refs/heads/*), more specifically
+            # branches pointing to tag objects
+            alt_refs_root = 'refs.alt'
+            alt_refs = os.path.join(alt_refs_root, 'fetch')
+            self._symlink_refs(alt_refs_root)
+
+            # Remove possible packed refs as they are not aligned with refs
+            # after the hackish fetch, e.g. packed refs might contain refs that
+            # do not exist in remote anymore
+            packed_refs = os.path.join(self.git_dir, 'packed-refs')
+            if os.path.exists(packed_refs):
+                os.unlink(packed_refs)
+
+            # Fetch all refs into alternate namespace
+            refspec = '+refs/*:refs/fetch/*'
+        else:
+            # Remove possible refs symlink
+            refs_path = os.path.join(self.git_dir, 'refs')
+            if os.path.islink(refs_path):
+                # Remove link target directory
+                link_tgt = os.path.join(self.git_dir, os.readlink(refs_path))
+                LOGGER.debug('Removing refs symlink and link target %s',
+                             link_tgt)
+                shutil.rmtree(link_tgt)
+                # Remove link and create empty refs directory
+                os.unlink(refs_path)
+                os.mkdir(refs_path)
+
+            # Update all refs
+            refspec = '+refs/*:refs/*'
+
         try:
-            self._git_command('fetch', ['-q', '-u', '-p', 'origin'])
+            self._git_command('fetch', ['-q', '-u', '-p', 'origin', refspec])
             try:
                 # Fetch remote HEAD separately
                 self._git_command('fetch', ['-q', '-u', 'origin', 'HEAD'])
@@ -93,6 +143,8 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
                              '0000000000000000000000000000000000000000')
         finally:
             self.set_ref('HEAD', orig_head)
+            if refs_hack:
+                self._symlink_refs(alt_refs)
 
     def force_checkout(self, commitish):
         """Checkout commitish"""
@@ -103,7 +155,7 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
         self._git_command('clean', ['-f', '-f', '-d', '-x'])
 
     @classmethod
-    def clone(cls, path, url, bare=False):
+    def clone(cls, path, url, bare=False, refs_hack=False):
         """Create a mirrored clone"""
         if bare:
             return super(MirrorGitRepository, cls).clone(path, url,
@@ -113,8 +165,11 @@ class MirrorGitRepository(GitRepository): # pylint: disable=R0904
             LOGGER.debug('Initializing non-bare mirrored repo')
             repo = cls.create(path)
             repo.add_remote_repo('origin', url)
+            # The refspec is a bit useless as we now use refspec in
+            # force_fetch(). But, it's better to have it in config as weel
+            # in case somebody somewhere would use the regular fetch() method.
             repo.set_config('remote.origin.fetch', '+refs/*:refs/*', True)
-            repo.force_fetch()
+            repo.force_fetch(refs_hack)
             return repo
 
     def list_tags(self, obj):
@@ -166,11 +221,12 @@ class CachedRepoError(Exception):
 class CachedRepo(object):
     """Object representing a cached repository"""
 
-    def __init__(self, base_dir, url, bare=False):
+    def __init__(self, base_dir, url, bare=False, refs_hack=False):
         self._basedir = base_dir
         self._repodir = None
         self._repo = None
         self._lock = None
+        self._refs_hack = refs_hack
 
         # Safe repo dir name
         urlbase, reponame = self._split_url(url)
@@ -253,7 +309,7 @@ class CachedRepo(object):
             else:
                 LOGGER.info('Fetching from remote')
                 try:
-                    self._repo.force_fetch()
+                    self._repo.force_fetch(refs_hack=self._refs_hack)
                 except GitRepositoryError as err:
                     raise CachedRepoError('Failed to fetch from remote: %s' %
                                            err)
@@ -261,7 +317,7 @@ class CachedRepo(object):
             LOGGER.info('Cloning from %s', url)
             try:
                 self._repo = MirrorGitRepository.clone(self._repodir, url,
-                                                      bare=bare)
+                                    bare=bare, refs_hack=self._refs_hack)
             except GitRepositoryError as err:
                 raise CachedRepoError('Failed to clone: %s' % err)
 

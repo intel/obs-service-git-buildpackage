@@ -139,6 +139,21 @@ class TestMirrorGitRepository(UnitTestsBase):
         del os.environ['GIT_COMMITTER_DATE']
 
 
+    def test_refs_hack(self):
+        """Test git fetch refs hack"""
+        repo = MirrorGitRepository.clone('testrepo', self.orig_repo.path,
+                                         refs_hack=True)
+        refs_path = os.path.join(repo.git_dir, 'refs')
+        ok_(os.path.islink(refs_path))
+
+        # Fetch without hack and see that symlink is removed
+        repo.force_fetch()
+        ok_(not os.path.islink(refs_path))
+
+        # Re-fetch with hack enabled and see that symlink restored
+        repo.force_fetch(refs_hack=True)
+        ok_(os.path.islink(refs_path))
+
 class TestCachedRepo(UnitTestsBase):
     """Test CachedRepo class"""
 
@@ -172,8 +187,8 @@ class TestCachedRepo(UnitTestsBase):
         repo.close()
         # Make new commit in "upstream"
         self.update_repository_file(self.orig_repo, 'foo.txt', 'more data\n')
-        # Fetch
-        repo = self.MockCachedRepo(self.orig_repo.path)
+        # Fetch, with refs_hack enabled
+        repo = self.MockCachedRepo(self.orig_repo.path, refs_hack=True)
         ok_(repo)
         eq_(path, repo.repo.path)
         ok_(sha != repo.repo.rev_parse('master'))
