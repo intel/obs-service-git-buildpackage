@@ -18,6 +18,7 @@
 # MA 02110-1301, USA.
 """Tests for the git-buildpackage OBS source service"""
 
+import glob
 import grp
 import json
 import mock
@@ -197,3 +198,18 @@ class TestService(UnitTestsBase):
         # Return env
         del os.environ['OBS_GIT_BUILDPACKAGE_GBP_USER']
 
+    def test_refs_hack_config(self):
+        """Test enabling the repocache refs hack through config"""
+        # Try with hack disabled (default)
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 0)
+        refs = glob.glob(self.cachedir + '/*/*/.git/refs')
+        eq_(len(refs), 1)
+        ok_(not os.path.islink(refs[0]))
+
+        # Enable hack -> refs should be a symlink
+        os.environ['OBS_GIT_BUILDPACKAGE_REPO_CACHE_REFS_HACK'] = 'yes'
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 0)
+        ok_(os.path.islink(refs[0]))
+
+        # Restore env
+        del os.environ['OBS_GIT_BUILDPACKAGE_REPO_CACHE_REFS_HACK']

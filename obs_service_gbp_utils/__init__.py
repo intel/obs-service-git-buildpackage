@@ -172,3 +172,22 @@ def write_treeish_meta(repo, treeish, outdir, filename):
     except IOError as err:
         raise GbpServiceError("Failed to write '%s': %s" % (filename, err))
 
+
+def str_to_bool(string, default=False):
+    """Convert (config value) string to boolean. Returns default if unable to
+       determine.
+
+    >>> str_to_bool('true')
+    True
+    >>> str_to_bool('0')
+    False
+    >>> str_to_bool('foo', True)
+    True
+    """
+    value = string.strip().lower()
+    if value in ['1', 'yes', 'on', 'true', 'enabled']:
+        return True
+    elif value in ['0', 'no', 'off', 'false', 'disabled']:
+        return False
+    else:
+        return default

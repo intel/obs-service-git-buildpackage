@@ -29,8 +29,8 @@ from gbp.scripts.buildpackage import main as gbp_deb
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
 from obs_service_gbp import LOGGER, gbplog
-from obs_service_gbp_utils import GbpServiceError, GbpChildBTError, fork_call
-from obs_service_gbp_utils import sanitize_uid_gid, write_treeish_meta
+from obs_service_gbp_utils import (GbpServiceError, GbpChildBTError, fork_call,
+            sanitize_uid_gid, write_treeish_meta, str_to_bool)
 from gbp_repocache import CachedRepo, CachedRepoError
 import gbp_repocache
 
@@ -77,7 +77,8 @@ def read_config(filenames):
     defaults = {'repo-cache-dir': '/var/cache/obs/git-buildpackage-repos/',
                 'gbp-tmp-dir': '/tmp/obs-service-gbp/',
                 'gbp-user': None,
-                'gbp-group': None}
+                'gbp-group': None,
+                'repo-cache-refs-hack': 'no'}
 
     filenames = [os.path.expanduser(fname) for fname in filenames]
     LOGGER.debug('Trying %s config files: %s', len(filenames), filenames)
@@ -202,8 +203,10 @@ def main(argv=None):
     config = read_config(args.config)
 
     # Create / update cached repository
+    refs_hack = str_to_bool(config['repo-cache-refs-hack'])
     try:
-        repo = CachedRepo(config['repo-cache-dir'], args.url)
+        repo = CachedRepo(config['repo-cache-dir'], args.url,
+                          refs_hack=refs_hack)
         args.revision = repo.update_working_copy(args.revision)
     except CachedRepoError as err:
         LOGGER.error('RepoCache: %s', str(err))

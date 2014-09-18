@@ -22,3 +22,11 @@
 ##directly.
 #gbp-user = gbpservice
 #gbp-group = gbpservice
+
+## Git-fetch refs hack
+## Allows fetching/cloning remote repositories that have refs/heads/* pointing
+## to a tag object. Gerrit allows branches pointing to tag objects. However,
+## git disallows this which causes fetch to fail in repocache if such branches
+## exist in the remote repository. This setting activates a hack to workaround
+## the problem with such remote repositories.
+#repo-cache-refs-hack = yes
