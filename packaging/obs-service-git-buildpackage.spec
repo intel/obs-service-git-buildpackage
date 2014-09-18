@@ -78,7 +78,7 @@ rm -rf %{buildroot}%{python_sitelib}/*info
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING DEPLOYMENT
+%doc COPYING DEPLOYMENT README
 %doc config/obs-service-git-buildpackage.example.config
 %dir /usr/lib/obs
 %dir /usr/lib/obs/service

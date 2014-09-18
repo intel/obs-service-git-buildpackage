@@ -1,0 +1,63 @@
+OBS-SERVICE-GIT-BUILDPACKAGE
+============================
+
+Obs-service-git-buildpackage is a source service for OBS (openSUSE Build
+Service) that uses the git-buildpackage tool to create the packaging files from
+a Git repository. It clones and caches a remote Git repository and uses the
+"gbp buildpackage[-rpm]" commands to export the packaging files from there.
+
+The service supports both RPM and Debian packaging.
+
+
+INSTALLATION
+------------
+Please see the DEPLOYMENT document under package documentation.
+
+
+CONFIGURATION FILE
+------------------
+The service will read the following configuration files:
+    /etc/obs/services/git-buildpackage
+        System-wide configuration meant for server installations
+
+    ~/.obs/git-buildpackage
+        User-specific configuration for desktop installations
+
+The configuration are read in the above order and system-wide settings are
+overridden by the the user-specific config. See the example config file
+(obs-service-git-buildpackage.example.conf) in package documentation for more
+details.
+
+For testing, if you run the service script directly, you can also define config
+file(s) with the --config command line option.
+
+
+PARAMETERS
+----------
+The following parameters are accepted in the _service file.
+    <parameter name="url">URL</parameter>
+        Remote repository URL. This is a mandatory parameter.
+
+    <parameter name="revision">TREEISH</parameter>
+        Revision (tree-ish) to be built. Default is HEAD.
+
+    <parameter name="deb">[yes|no|auto]</parameter>
+        Whether to build Deb package (i.e. export Deb packaging files with
+        gbp-buildpackage). Set to 'auto' for the service to guess whether to
+        run gbp-buildpackage or not.
+
+    <parameter name="rpm">[yes|no|auto]</parameter>
+        Whether to build RPM package (i.e. export RPM packaging files with
+        gbp-buildpackage-rpm). Set to 'auto' for the service to guess whether
+        to run gbp-buildpackage-rpm or not.
+
+    <parameter name="spec-vcs-tag">VCS_TAG_FORMAT</parameter>
+        Set/update the VCS: tag in the spec file. The parameter is a Python-
+        style format string and accepts substitution keys like '%(tagname)s'
+        and '%(commit)s'. See gbp-buildpackage-rpm manpage for all valid keys.
+
+        This option only affects rpm packages.
+
+    <parameter name="verbose">[yes|no]</parameter>
+        Enable verbose output. Mainly meant for debugging purposes.
+
