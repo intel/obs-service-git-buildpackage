@@ -1,5 +1,5 @@
 # Set to 0 if "normal release"
-%define pre_release 1
+%define pre_release 0
 
 %if 0%{?pre_release}
 %define release_prefix 0pre%{pre_release}.

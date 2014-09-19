@@ -1,3 +1,31 @@
+* Fri Sep 19 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.8
+- Release version 0.8
+- repocache: use standard logging module and interface
+  Do not automatically use gbp-specific logging. Thus, let the user of
+  this module to setup logging.
+- Implement repocache-adm command line tool
+  This command line tool is intended for managing a gbp repository cache.
+  It will contain functionality for e.g. checking, cleaning up and
+  repairing the repository cache.
+  The tool is supposed to be runnable on a live system.
+  This initial implementation only contains a rudimentary 'stat' command
+  for printing repocache status/statistics.
+- repocache: suppress some confusing git output
+- packaging: add missing dependency
+  The main package requires -utils subpackage.
+- repocache: clean out stale submodules, too
+- repocache: implement refs hack for fetching
+- Add config option for git-fetch refs hack
+  New config file option 'repo-cache-refs-hack' for enabling the refs hack
+  in repocache. The option is disabled, by default.
+  Enabling the hack makes it possible to fetch/clone remote repositories
+  that have branches (refs/heads/*) that point to tag objects. This may
+  encountered with Gerrit repositories - "pure" Git repositories managed
+  by Git tools shouldn't have such branches as Git sanity checking
+  prevents them (which is the reason this hack is needed).
+- Add an example config file
+- Add README file
+
 * Tue Jun 03 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.7
 - Release 0.7
 - utils: handle child exceptions in fork_call() more gracefully
