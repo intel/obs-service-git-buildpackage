@@ -14,7 +14,7 @@ Release:        %{?release_prefix}%{?opensuse_bs:<CI_CNT>.<B_CNT>}%{!?opensuse_b
 URL:            http://www.tizen.org
 Source:         %{name}-%{version}.tar.bz2
 Requires:       git-buildpackage
-Requires:       git-buildpackage-rpm
+Requires:       git-buildpackage-rpm >= 0.6.15
 Requires:       gbp-repocache = %{version}-%{release}
 Requires:       %{name}-utils = %{version}-%{release}
 BuildRequires:  python

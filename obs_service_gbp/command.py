@@ -59,7 +59,7 @@ def construct_gbp_args(args, config, outdir):
     # Dermine deb and rpm specific args
     argv_rpm = ['git-buildpackage-rpm'] + argv_common
     argv_rpm.extend(['--git-builder=osc',
-                     '--git-export-only'])
+                     '--git-no-build'])
     if args.spec_vcs_tag:
         argv_rpm.append('--git-spec-vcs-tag=%s' % args.spec_vcs_tag)
 
