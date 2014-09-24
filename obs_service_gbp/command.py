@@ -72,18 +72,22 @@ def construct_gbp_args(args, config, outdir):
                      '--git-builder=%s' % deb_builder_script])
     return (argv_rpm, argv_deb)
 
-def read_config(filenames):
+def read_config(filenames=None):
     '''Read configuration file(s)'''
+    default_configs = ['/etc/obs/services/git-buildpackage',
+                       '~/.obs/git-buildpackage']
+
     defaults = {'repo-cache-dir': '/var/cache/obs/git-buildpackage-repos/',
                 'gbp-tmp-dir': '/tmp/obs-service-gbp/',
                 'gbp-user': None,
                 'gbp-group': None,
                 'repo-cache-refs-hack': 'no'}
 
-    filenames = [os.path.expanduser(fname) for fname in filenames]
-    LOGGER.debug('Trying %s config files: %s', len(filenames), filenames)
+    configs = default_configs if filenames is None else filenames
+    configs = [os.path.expanduser(fname) for fname in configs]
+    LOGGER.debug('Trying %s config files: %s', len(configs), configs)
     parser = SafeConfigParser(defaults=defaults)
-    read = parser.read(filenames)
+    read = parser.read(configs)
     LOGGER.debug('Read %s config files: %s', len(read), read)
 
     # Add our one-and-only section, if it does not exist
@@ -159,8 +163,6 @@ def gbp_export(repo, args, config):
 
 def parse_args(argv):
     """Argument parser"""
-    default_configs = ['/etc/obs/services/git-buildpackage',
-                       '~/.obs/git-buildpackage']
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', help='Remote repository URL', required=True)
@@ -182,10 +184,6 @@ def parse_args(argv):
                              'FILENAME in json format')
     args = parser.parse_args(argv)
     args.outdir = os.path.abspath(args.outdir)
-
-    # Use default config files if --config was not defined
-    if args.config is None:
-        args.config = default_configs
 
     return args
 
