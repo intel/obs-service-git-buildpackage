@@ -30,7 +30,6 @@ from gbp.git.repository import GitRepository, GitRepositoryError
 
 # Setup logging
 LOGGER = logging.getLogger('gbp-repocache')
-LOGGER.setLevel(logging.INFO)
 
 
 class MirrorGitRepository(GitRepository): # pylint: disable=R0904

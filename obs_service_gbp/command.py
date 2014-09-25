@@ -33,7 +33,6 @@ from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 from obs_service_gbp_utils import (GbpServiceError, GbpChildBTError, fork_call,
             sanitize_uid_gid, write_treeish_meta, str_to_bool)
 from gbp_repocache import CachedRepo, CachedRepoError
-import gbp_repocache
 
 
 # Setup module-level logging
@@ -204,7 +203,6 @@ def main(argv=None):
     if args.verbose == 'yes':
         gbplog.setup(color='auto', verbose=True)
         logging.root.setLevel(logging.DEBUG)
-        gbp_repocache.LOGGER.setLevel(logging.DEBUG)
 
     config = read_config(args.config)
 
