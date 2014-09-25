@@ -20,19 +20,25 @@
 
 import os
 import argparse
+import logging
 import shutil
 import tempfile
 from ConfigParser import SafeConfigParser
 
+import gbp.log as gbplog
 from gbp.rpm import guess_spec, NoSpecError
 from gbp.scripts.buildpackage import main as gbp_deb
 from gbp.scripts.buildpackage_rpm import main as gbp_rpm
 
-from obs_service_gbp import LOGGER, gbplog
 from obs_service_gbp_utils import (GbpServiceError, GbpChildBTError, fork_call,
             sanitize_uid_gid, write_treeish_meta, str_to_bool)
 from gbp_repocache import CachedRepo, CachedRepoError
 import gbp_repocache
+
+
+# Setup module-level logging
+LOGGER = logging.getLogger('source_service')
+
 
 def have_spec(directory):
     """Find if the package has spec files"""
@@ -192,11 +198,13 @@ def main(argv=None):
 
     args = parse_args(argv)
 
+    logging.basicConfig(level=logging.INFO,
+                        format='%(name)s:%(levelname)s: %(message)s')
     LOGGER.info('Starting git-buildpackage source service')
     if args.verbose == 'yes':
         gbplog.setup(color='auto', verbose=True)
-        LOGGER.setLevel(gbplog.DEBUG)
-        gbp_repocache.LOGGER.setLevel(gbplog.DEBUG)
+        logging.root.setLevel(logging.DEBUG)
+        gbp_repocache.LOGGER.setLevel(logging.DEBUG)
 
     config = read_config(args.config)
 

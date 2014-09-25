@@ -17,11 +17,3 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 """Helpers for the git-buildpackage OBS source service"""
-
-import gbp.log as gbplog
-
-
-# Setup logging
-LOGGER = gbplog.getLogger('source_service')
-LOGGER.setLevel(gbplog.INFO)
-
