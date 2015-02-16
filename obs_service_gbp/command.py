@@ -108,6 +108,15 @@ def read_config(filenames=None):
     # We only use keys from one section, for now
     return dict(parser.items('general'))
 
+def move_dir_content(source, target):
+    """Move files from dir to another and change ownership"""
+    euid = os.geteuid()
+    egid = os.getegid()
+    for fname in os.listdir(source):
+        tgt_path = os.path.join(target, fname)
+        shutil.move(os.path.join(source, fname), tgt_path)
+        os.lchown(tgt_path, euid, egid)
+
 def gbp_export(repo, args, config):
     """Export sources with GBP"""
     # Create output directories
@@ -149,9 +158,7 @@ def gbp_export(repo, args, config):
                 LOGGER.error('Git-buildpackage failed, unable to export Debian '
                              'sources package files')
                 return 3
-        for fname in os.listdir(tmp_out):
-            shutil.move(os.path.join(tmp_out, fname),
-                        os.path.join(args.outdir, fname))
+        move_dir_content(tmp_out, args.outdir)
     except GbpChildBTError as err:
         LOGGER.error('Unhandled exception in GBP:\n'
                      '%s', err.prettyprint_tb())
