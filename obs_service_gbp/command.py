@@ -43,6 +43,7 @@ EXIT_OK = 0
 EXIT_ERR_SERVICE = 1
 EXIT_ERR_RPM_EXPORT = 2
 EXIT_ERR_DEB_EXPORT = 3
+EXIT_ERR_GBP_CRASH = 4
 
 
 class ExportError(Exception):
@@ -173,7 +174,7 @@ def gbp_export(repo, args, config):
         LOGGER.error('Unhandled exception in GBP:\n'
                      '%s', err.prettyprint_tb())
         raise ExportError('Failed to export packaging files',
-                          EXIT_ERR_SERVICE)
+                          EXIT_ERR_GBP_CRASH)
     except GbpServiceError as err:
         LOGGER.error('Internal service error when trying to run GBP: %s', err)
         raise ExportError('This is most likely a configuration error (or a '

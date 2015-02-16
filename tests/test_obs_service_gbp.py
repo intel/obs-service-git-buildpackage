@@ -107,12 +107,12 @@ class TestService(UnitTestsBase):
     @mock.patch('obs_service_gbp.command.gbp_deb', _mock_gbp)
     def test_deb_crash(self):
         """Test crash in git-buildpackage"""
-        eq_(service(['--url', self.orig_repo.path, '--revision=deb']), 1)
+        eq_(service(['--url', self.orig_repo.path, '--revision=deb']), 4)
 
     @mock.patch('obs_service_gbp.command.gbp_rpm', _mock_gbp)
     def test_rpm_crash(self):
         """Test crash in git-buildpackage-rpm"""
-        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 1)
+        eq_(service(['--url', self.orig_repo.path, '--revision=rpm']), 4)
 
     @mock.patch('obs_service_gbp.command.fork_call', _mock_fork_call)
     def test_service_error(self):
