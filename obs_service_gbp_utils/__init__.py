@@ -54,17 +54,22 @@ class GbpChildBTError(Exception):
 def _demoted_child_call(uid, gid, ret_data_q, func):
     """Call a function/method with different uid/gid"""
     # Set UID and GID
-    try:
-        if gid and gid > 0:
+    if gid and gid > 0:
+        try:
             os.setresgid(gid, gid, gid)
-        if uid and uid > 0:
+        except OSError as err:
+            ret_data_q.put(GbpServiceError("Setting GID (%s) failed: %s" %
+                                           (gid, err)))
+            sys.exit(_RET_FORK_ERR)
+    if uid and uid > 0:
+        try:
             os.setresuid(uid, uid, uid)
             # Set environment
             os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
-    except OSError as err:
-        ret_data_q.put(GbpServiceError("Setting UID/GID (%s:%s) failed: %s" %
-                                       (uid, gid, err)))
-        sys.exit(_RET_FORK_ERR)
+        except OSError as err:
+            ret_data_q.put(GbpServiceError("Setting UID (%s) failed: %s" %
+                                           (uid, err)))
+            sys.exit(_RET_FORK_ERR)
     # Call the function
     try:
         # Func must be a callable without arguments
