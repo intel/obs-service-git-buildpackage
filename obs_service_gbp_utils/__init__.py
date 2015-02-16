@@ -55,12 +55,12 @@ def _demoted_child_call(uid, gid, ret_data_q, func):
     """Call a function/method with different uid/gid"""
     # Set UID and GID
     try:
+        if gid and gid > 0:
+            os.setresgid(gid, gid, gid)
         if uid and uid > 0:
             os.setresuid(uid, uid, uid)
             # Set environment
             os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
-        if gid and gid > 0:
-            os.setresgid(gid, gid, gid)
     except OSError as err:
         ret_data_q.put(GbpServiceError("Setting UID/GID (%s:%s) failed: %s" %
                                        (uid, gid, err)))
