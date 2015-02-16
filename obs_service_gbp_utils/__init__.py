@@ -64,12 +64,15 @@ def _demoted_child_call(uid, gid, ret_data_q, func):
     if uid and uid > 0:
         try:
             os.setresuid(uid, uid, uid)
-            # Set environment
-            os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
         except OSError as err:
             ret_data_q.put(GbpServiceError("Setting UID (%s) failed: %s" %
                                            (uid, err)))
             sys.exit(_RET_FORK_ERR)
+        try:
+            # Set environment
+            os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
+        except KeyError:
+            pass
     # Call the function
     try:
         # Func must be a callable without arguments
