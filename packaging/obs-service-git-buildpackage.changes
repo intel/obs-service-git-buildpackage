@@ -1,3 +1,14 @@
+* Mon Feb 16 2015 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.9
+- Release version 0.9
+- Use --git-no-build argument for gbp buildpackage-rpm
+- Use the standard logging module
+- repocache: don't set initial logging level
+- Set GID before UID
+- More fine-grained exception handling when setting UID/GID
+- Don't crash if UID is not found in pw database
+- Set correct ownership of the exported files
+- New exit code (4) indicating gbp crashes
+
 * Fri Sep 19 2014 Markus Lehtonen <markus.lehtonen@linux.intel.com> 0.8
 - Release version 0.8
 - repocache: use standard logging module and interface
