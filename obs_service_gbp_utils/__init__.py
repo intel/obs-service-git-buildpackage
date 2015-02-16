@@ -77,9 +77,11 @@ def _demoted_child_call(uid, gid, ret_data_q, func):
     try:
         # Func must be a callable without arguments
         ret = func()
+    # pylint: disable=broad-except
     except Exception as err:
         ret_data_q.put(GbpChildBTError())
         sys.exit(_RET_FORK_ERR)
+    # pylint: enable=broad-except
     else:
         ret_data_q.put(ret)
     sys.exit(_RET_FORK_OK)
