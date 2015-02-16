@@ -38,6 +38,17 @@ from gbp_repocache import CachedRepo, CachedRepoError
 # Setup module-level logging
 LOGGER = logging.getLogger('source_service')
 
+# Exit codes
+EXIT_OK = 0
+EXIT_ERR_SERVICE = 1
+EXIT_ERR_RPM_EXPORT = 2
+EXIT_ERR_DEB_EXPORT = 3
+
+
+class ExportError(Exception):
+    """Class for handling gbp export errors"""
+    pass
+
 
 def have_spec(directory):
     """Find if the package has spec files"""
@@ -125,14 +136,13 @@ def gbp_export(repo, args, config):
             os.makedirs(args.outdir)
         tmp_out = tempfile.mkdtemp(dir=args.outdir)
     except OSError as err:
-        LOGGER.error('Failed to create output directory: %s', err)
-        return 1
+        raise ExportError('Failed to create output directory: %s' % err,
+                          EXIT_ERR_SERVICE)
     # Determine UID/GID
     try:
         uid, gid = sanitize_uid_gid(config['gbp-user'], config['gbp-group'])
     except GbpServiceError as err:
-        LOGGER.error(err)
-        return 1
+        raise ExportError(err, EXIT_ERR_SERVICE)
     # Make temp outdir accessible to the GBP UID/GID
     os.chown(tmp_out, uid, gid)
 
@@ -147,31 +157,31 @@ def gbp_export(repo, args, config):
             LOGGER.debug('git-buildpackage-rpm args: %s', ' '.join(rpm_args))
             ret = fork_call(uid, gid, gbp_rpm)(rpm_args)
             if ret:
-                LOGGER.error('Git-buildpackage-rpm failed, unable to export '
-                             'RPM packaging files')
-                return 2
+                raise ExportError('Git-buildpackage-rpm failed, unable to '
+                                  'export RPM packaging files',
+                                  EXIT_ERR_RPM_EXPORT)
         if args.deb == 'yes' or (args.deb== 'auto' and os.path.isdir('debian')):
             LOGGER.info('Exporting Debian source package with GBP')
             LOGGER.debug('git-buildpackage args: %s', ' '.join(deb_args))
             ret = fork_call(uid, gid, gbp_deb)(deb_args)
             if ret:
-                LOGGER.error('Git-buildpackage failed, unable to export Debian '
-                             'sources package files')
-                return 3
+                raise ExportError('Git-buildpackage failed, unable to export '
+                                  'Debian sources package files',
+                                  EXIT_ERR_DEB_EXPORT)
         move_dir_content(tmp_out, args.outdir)
     except GbpChildBTError as err:
         LOGGER.error('Unhandled exception in GBP:\n'
                      '%s', err.prettyprint_tb())
-        LOGGER.error('Failed to export packaging files')
-        return 1
+        raise ExportError('Failed to export packaging files',
+                          EXIT_ERR_SERVICE)
     except GbpServiceError as err:
         LOGGER.error('Internal service error when trying to run GBP: %s', err)
-        LOGGER.error('This is most likely a configuration error (or a BUG)!')
-        return 1
+        raise ExportError('This is most likely a configuration error (or a '
+                          'BUG)!', EXIT_ERR_SERVICE)
     finally:
         os.chdir(orig_dir)
         shutil.rmtree(tmp_out)
-    return 0
+
 
 def parse_args(argv):
     """Argument parser"""
@@ -224,14 +234,19 @@ def main(argv=None):
         return 1
 
     # Run GBP
-    ret = gbp_export(repo, args, config)
+    try:
+        gbp_export(repo, args, config)
 
-    # Write git meta file
-    if not ret and args.git_meta:
-        try:
+        # Write git meta file
+        if args.git_meta:
             write_treeish_meta(repo.repo, args.revision, args.outdir,
                                args.git_meta)
-        except GbpServiceError as err:
-            LOGGER.error(err)
-            ret = 1
+    except ExportError as err:
+        LOGGER.error(err[0])
+        ret = err[1]
+    except GbpServiceError as err:
+        LOGGER.error(err)
+        ret = EXIT_ERR_SERVICE
+    else:
+        ret = EXIT_OK
     return ret
